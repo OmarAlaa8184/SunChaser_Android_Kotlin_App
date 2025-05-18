@@ -1,6 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.SunChaser" parent="Theme.Material3.DayNight.NoActionBar">
+
+        <item name="colorPrimary">@color/ic_launcher_background</item>
+        <item name="android:background">@color/ic_launcher_background</item>
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>

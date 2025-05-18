@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id ("kotlin-kapt") // <-- Required for annotation processing
+
 }
 
 android {
@@ -45,4 +47,22 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    //lottie
+    implementation ("com.airbnb.android:lottie:6.6.6")
+
+
+    implementation ("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation ("androidx.work:work-runtime-ktx:2.9.1")
+    implementation ("com.github.bumptech.glide:glide:4.16.0")
+    implementation ("androidx.recyclerview:recyclerview:1.3.2")
+    implementation ("androidx.room:room-ktx:2.6.1")
+    implementation ("androidx.room:room-runtime:2.6.1")
+    kapt ("androidx.room:room-compiler:2.6.1")
+
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+
+
+
 }

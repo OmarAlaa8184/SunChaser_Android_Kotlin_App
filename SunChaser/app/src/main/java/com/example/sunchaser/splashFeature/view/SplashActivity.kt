@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.example.sunchaser.HomeFeature.MainActivity
+import com.example.sunchaser.homeFeature.view.activitiesView.HomeView
 import com.example.sunchaser.R
 import com.example.sunchaser.splashFeature.viewmodel.SplashViewModel
 
@@ -18,7 +18,7 @@ class SplashActivity : AppCompatActivity() {
 
         viewModel.navigateToMain.observe(this){ shouldNavigate ->
             if (shouldNavigate) {
-                startActivity(Intent(this, MainActivity::class.java))
+                startActivity(Intent(this, HomeView::class.java))
                 finish()
             }
         }

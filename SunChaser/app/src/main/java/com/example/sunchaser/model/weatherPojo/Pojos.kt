@@ -1,0 +1,194 @@
+package com.example.sunchaser.model.weatherPojo
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+data class ForecastResponse(
+    val cod: String,
+    val list: List<Forecast>,
+    val city: City
+)
+
+data class Forecast(
+    val dt: Long,
+    val main: Main,
+    val weather: List<Weather>,
+    val clouds: Clouds,
+    val wind: Wind,
+    val dt_txt: String
+)
+
+data class Main(
+    val temp: Float,
+    val feels_like: Float,
+    val temp_min: Float,
+    val temp_max: Float,
+    val pressure: Int,
+    val humidity: Int
+)
+
+data class Weather(
+    val id: Int,
+    val main: String,
+    val description: String,
+    val icon: String
+)
+
+data class Clouds(val all: Int)
+
+data class Wind(val speed: Float, val deg: Int)
+
+data class City(val name: String, val coord: Coord, val country: String)
+data class Coord(val lat: Float, val lon: Float)
+
+
+@Entity(tableName = "forecasts_table")
+data class ForecastEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val cityName: String,
+    val country: String,
+    val latitude: Float,
+    val longitude: Float,
+    val dt: Long,
+    val temp: Float,
+    val feelsLike: Float,
+    val tempMin: Float,
+    val tempMax: Float,
+    val pressure: Int,
+    val humidity: Int,
+    val weatherId: Int,
+    val weatherMain: String,
+    val weatherDescription: String,
+    val weatherIcon: String,
+    val clouds: Int,
+    val windSpeed: Float,
+    val windDeg: Int,
+    val dtTxt: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+data class DailyForecast(
+    val date: String,
+    val avgTemp: Float,
+    val weather: Weather
+)
+
+// Convert ForecastResponse to ForecastEntity
+fun ForecastResponse.toEntityList(): List<ForecastEntity> {
+    return list.map { forecast ->
+        ForecastEntity(
+            cityName = city.name,
+            country = city.country,
+            latitude = city.coord.lat,
+            longitude = city.coord.lon,
+            dt = forecast.dt,
+            temp = forecast.main.temp,
+            feelsLike = forecast.main.feels_like,
+            tempMin = forecast.main.temp_min,
+            tempMax = forecast.main.temp_max,
+            pressure = forecast.main.pressure,
+            humidity = forecast.main.humidity,
+            weatherId = forecast.weather.first().id,
+            weatherMain = forecast.weather.first().main,
+            weatherDescription = forecast.weather.first().description,
+            weatherIcon = forecast.weather.first().icon,
+            clouds = forecast.clouds.all,
+            windSpeed = forecast.wind.speed,
+            windDeg = forecast.wind.deg,
+            dtTxt = forecast.dt_txt
+        )
+    }
+}
+
+// Convert ForecastEntity to ForecastResponse
+fun List<ForecastEntity>.toForecastResponse(): ForecastResponse
+{
+    val cityName = firstOrNull()?.cityName ?: ""
+    val country = firstOrNull()?.country ?: ""
+    val lat = firstOrNull()?.latitude ?: 0f
+    val lon = firstOrNull()?.longitude ?: 0f
+
+    return ForecastResponse(
+        cod = "200",
+        list = map { entity ->
+            Forecast(
+                dt = entity.dt,
+                main = Main(
+                    temp = entity.temp,
+                    feels_like = entity.feelsLike,
+                    temp_min = entity.tempMin,
+                    temp_max = entity.tempMax,
+                    pressure = entity.pressure,
+                    humidity = entity.humidity
+                ),
+                weather = listOf(
+                    Weather(
+                        id = entity.weatherId,
+                        main = entity.weatherMain,
+                        description = entity.weatherDescription,
+                        icon = entity.weatherIcon
+                    )
+                ),
+                clouds = Clouds(all = entity.clouds),
+                wind = Wind(speed = entity.windSpeed, deg = entity.windDeg),
+                dt_txt = entity.dtTxt
+            )
+        },
+        city = City(name = cityName, coord = Coord(lat, lon), country = country)
+    )
+}
+
+
+
+/*fun List<Forecast>.toDailyForecasts(): List<DailyForecast> {
+    val dailyGroups = this.groupBy { forecast ->
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            .format(Date(forecast.dt * 1000))
+    }
+    return dailyGroups.map { (date, forecasts) ->
+        val avgTemp = forecasts.map { it.main.temp }.average().toFloat()
+        val mostFrequentWeather = forecasts.groupBy { it.weather[0].icon }
+            .maxByOrNull { it.value.size }?.value?.first()?.weather?.first()
+            ?: forecasts.first().weather.first()
+        DailyForecast(
+            date = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+                .format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)!!),
+            avgTemp = avgTemp,
+            weather = mostFrequentWeather
+        )
+    }
+}*/
+
+// Group ForecastEntity by day and convert to DailyForecast-like data
+ fun List<ForecastEntity>.toDailyForecasts(): List<DailyForecast> {
+    val dailyGroups = this.groupBy { entity ->
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            .format(Date(entity.dt * 1000))
+    }
+
+    return dailyGroups.map { (date, entities) ->
+        val avgTemp = entities.map { it.temp }.average().toFloat()
+        val mostFrequentWeather = entities.groupBy { it.weatherIcon }
+            .maxByOrNull { it.value.size }?.value?.first()
+            ?: entities.first()
+        DailyForecast(
+            date = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+                .format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)!!),
+            avgTemp = avgTemp,
+            weather = Weather(
+                id = mostFrequentWeather.weatherId,
+                main = mostFrequentWeather.weatherMain,
+                description = mostFrequentWeather.weatherDescription,
+                icon = mostFrequentWeather.weatherIcon
+            )
+        )
+    }
+}
+
+fun Long.toHourlyFormat(): String {
+    return SimpleDateFormat("h a", Locale.getDefault()).format(Date(this * 1000))
+}

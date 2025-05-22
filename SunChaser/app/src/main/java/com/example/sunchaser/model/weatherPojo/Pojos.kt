@@ -77,6 +77,9 @@ data class DailyForecast(
     val weather: Weather
 )
 
+data class StatisticItem(val title: String, val value: String)
+
+
 // Convert ForecastResponse to ForecastEntity
 fun ForecastResponse.toEntityList(): List<ForecastEntity> {
     return list.map { forecast ->

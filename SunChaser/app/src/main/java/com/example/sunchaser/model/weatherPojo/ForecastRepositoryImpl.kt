@@ -23,11 +23,10 @@ class ForecastRepositoryImpl private constructor(private var forecastRemoteDataS
 
     override suspend fun getFiveDayForecast(lat: Double, lon: Double): ForecastResponse
     {
-          //return forecastRemoteDataSource.getFiveDayForecast(lat,lon)
         return try
         {
             val response = forecastRemoteDataSource.getFiveDayForecast(lat, lon)
-            forecastLocalDataSource.insertForecasts(response.toEntityList())
+           // forecastLocalDataSource.insertForecasts(response.toEntityList())
             response
         }
         catch (e: Exception)

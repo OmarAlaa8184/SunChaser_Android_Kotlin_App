@@ -167,7 +167,8 @@ fun List<ForecastEntity>.toForecastResponse(): ForecastResponse
 }*/
 
 // Group ForecastEntity by day and convert to DailyForecast-like data
- fun List<ForecastEntity>.toDailyForecasts(): List<DailyForecast> {
+ fun List<ForecastEntity>.toDailyForecasts(): List<DailyForecast>
+ {
     val dailyGroups = this.groupBy { entity ->
         SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             .format(Date(entity.dt * 1000))
@@ -190,6 +191,7 @@ fun List<ForecastEntity>.toForecastResponse(): ForecastResponse
             )
         )
     }
+        .take(5)
 }
 
 fun Long.toHourlyFormat(): String {

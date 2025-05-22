@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.sunchaser.model.network.Location
 import com.example.sunchaser.model.weatherPojo.ForecastRepository
 import com.example.sunchaser.model.weatherPojo.ForecastResponse
-import com.example.sunchaser.model.weatherPojo.toEntityList
 import com.example.sunchaser.model.weatherPojo.toForecastResponse
 import kotlinx.coroutines.launch
 
@@ -40,7 +39,7 @@ class HomeViewModel (private val forecastRepository: ForecastRepository, private
             try
             {
                 val response = forecastRepository.getFiveDayForecast(lat, lon)
-                forecastRepository.insertForecasts(response.toEntityList())
+              //  forecastRepository.insertForecasts(response)
                 _forecast.postValue(response)
             }
             catch (e: Exception)

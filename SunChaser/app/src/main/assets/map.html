@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GPS Tracker (Leaflet)</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+        html, body, #map {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+        }
+        .info-panel {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 1000;
+          background: white;
+          padding: 10px;
+          border-radius: 5px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div class="info-panel">
+    <div>Latitude: <span id="lat-value">30.0333</span></div>
+    <div>Longitude: <span id="lng-value">31.2333</span></div>
+    <div>Zoom: <span id="zoom-value">13</span></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize map with Cairo coordinates
+    let map = L.map('map').setView([30.0333, 31.2333], 13);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+    // Create marker with custom icon
+    let marker = L.marker([30.0333, 31.2333], {
+      draggable: true,
+      autoPan: true,
+      icon: L.divIcon({
+        className: 'gps-marker',
+        html: '<div style="background: red; border-radius: 50%; width: 20px; height: 20px;"></div>',
+        iconSize: [20, 20]
+      })
+    }).addTo(map);
+
+    // Add scale control
+    L.control.scale().addTo(map);
+
+    // Update info panel with current position
+    function updateInfoPanel(lat, lng) {
+      document.getElementById('lat-value').textContent = lat.toFixed(6);
+      document.getElementById('lng-value').textContent = lng.toFixed(6);
+      document.getElementById('zoom-value').textContent = map.getZoom();
+    }
+
+    // Update map position and marker
+    function updateLocation(lat, lng) {
+      map.setView([lat, lng]);
+      marker.setLatLng([lat, lng]);
+      updateInfoPanel(lat, lng);
+    }
+
+    // Initialize info panel
+    updateInfoPanel(30.0333, 31.2333);
+
+    // Handle marker drag
+    marker.on('dragend', function(e) {
+      let latlng = marker.getLatLng();
+      updateInfoPanel(latlng.lat, latlng.lng);
+      if (window.Android) {
+        window.Android.onLocationSelected(latlng.lat, latlng.lng);
+      }
+    });
+
+    // Handle map click to move marker
+    map.on('click', function(e) {
+      marker.setLatLng(e.latlng);
+      updateInfoPanel(e.latlng.lat, e.latlng.lng);
+      if (window.Android) {
+        window.Android.onLocationSelected(e.latlng.lat, e.latlng.lng);
+      }
+    });
+</script>
+</body>
+</html>

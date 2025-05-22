@@ -1,14 +1,6 @@
 package com.example.sunchaser.model.db
 
-import com.example.sunchaser.model.weatherPojo.City
-import com.example.sunchaser.model.weatherPojo.Clouds
-import com.example.sunchaser.model.weatherPojo.Coord
-import com.example.sunchaser.model.weatherPojo.Forecast
 import com.example.sunchaser.model.weatherPojo.ForecastEntity
-import com.example.sunchaser.model.weatherPojo.ForecastResponse
-import com.example.sunchaser.model.weatherPojo.Main
-import com.example.sunchaser.model.weatherPojo.Weather
-import com.example.sunchaser.model.weatherPojo.Wind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

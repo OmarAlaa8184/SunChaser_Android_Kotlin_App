@@ -2,33 +2,33 @@ package com.example.sunchaser.homeFeature.view.activitiesView
 
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.icu.text.SimpleDateFormat
 import android.os.Bundle
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.productsusingviewbinding.RetrofitClient
+import com.example.sunchaser.R
+import com.example.sunchaser.databinding.ActivityMainBinding
+import com.example.sunchaser.homeFeature.view.adapters.CurrentDayAdapter
 import com.example.sunchaser.homeFeature.view.adapters.DailyAdapter
 import com.example.sunchaser.homeFeature.view.adapters.HourlyAdapter
+import com.example.sunchaser.homeFeature.view.adapters.StatisticsAdapter
+import com.example.sunchaser.homeFeature.view.listener.OnCurrentDayClickListener
 import com.example.sunchaser.homeFeature.view.listener.OnDailyClickListener
 import com.example.sunchaser.homeFeature.view.listener.OnHourlyForecastClickListener
 import com.example.sunchaser.homeFeature.viewmodel.HomeViewModel
 import com.example.sunchaser.homeFeature.viewmodel.HomeViewModelFactory
-import com.example.sunchaser.R
-import com.example.sunchaser.databinding.ActivityMainBinding
-import com.example.sunchaser.homeFeature.view.adapters.CurrentDayAdapter
-import com.example.sunchaser.homeFeature.view.adapters.StatisticsAdapter
-import com.example.sunchaser.homeFeature.view.listener.OnCurrentDayClickListener
+import com.example.sunchaser.mapFeature.view.activitiesview.MapActivity
 import com.example.sunchaser.model.db.ForecastDatabase
 import com.example.sunchaser.model.db.ForecastLocalDataSourceImpl
 import com.example.sunchaser.model.network.ForecastRemoteDataSourceImpl
@@ -45,7 +45,9 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
-import com.google.android.material.navigation.NavigationView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 
@@ -59,8 +61,23 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
     private lateinit var homeViewModelFactory: HomeViewModelFactory
     private lateinit var homeViewModel: HomeViewModel
     private lateinit var lineChart: LineChart
+    private val defaultLat = 30.0333
+    private val defaultLng = 31.2333
 
     private val REQUEST_LOCATION_PERMISSION = 1
+
+    private val mapActivityResultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val data = result.data
+                val lat = data?.getDoubleExtra("latitude", defaultLat) ?: defaultLat
+                val lng = data?.getDoubleExtra("longitude", defaultLng) ?: defaultLng
+                homeViewModel.fetchForecast(lat, lng)
+                binding.tvCity.text = "Selected Location"
+                binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
+            }
+        }
+
 
     override fun onCreate(savedInstanceState: Bundle?)
     {
@@ -111,6 +128,8 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
+        binding.navigationView.setCheckedItem(R.id.nav_home)
+
         setupDrawer()
 
     }
@@ -142,7 +161,6 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
     }
 
 
-
     private fun updateUI(response: ForecastResponse)
     {
         // Current Weather
@@ -170,29 +188,40 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
 
 
     }
-    private fun setupDrawer() {
+
+    private fun setupDrawer()
+    {
         // Setup navigation item clicks
         binding.navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId)
             {
-                R.id.nav_home -> {
-                    // Handle Home
-                }
-                R.id.nav_setting -> {
-                    // Handle Settings
-                }
-                R.id.nav_map->{
+                R.id.nav_home ->
+                    {
+                       binding.drawerLayout.closeDrawer(GravityCompat.START)
+                    }
+                R.id.nav_setting ->
+                    {
+                       // Handle Settings
+                    }
+                R.id.nav_map->
+                    {
+                       val intent = Intent(this, MapActivity::class.java)
+                       mapActivityResultLauncher.launch(intent)
+                    }
+                R.id.nav_favorites->
+                    {
 
-                }
-                R.id.nav_favorites-> {
-
-                }
-
+                    }
             }
             // Close drawer after click
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        binding.navigationView.setCheckedItem(R.id.nav_home)
     }
 
     private fun updateTemperatureChart(forecasts: List<ForecastEntity>)
@@ -247,7 +276,8 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         statisticsAdapter.submitList(stats)
     }
 
-    override fun onBackPressed() {
+    override fun onBackPressed()
+    {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         } else {

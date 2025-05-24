@@ -76,7 +76,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="HUMIDITY"
+                    android:text="@string/humidity"
                     android:textColor="#80FFFFFF"
                     android:textSize="10sp"
                     android:fontFamily="@font/poppinsmedium"
@@ -109,7 +109,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="WIND"
+                    android:text="@string/wind"
                     android:textColor="#80FFFFFF"
                     android:textSize="10sp"
                     android:fontFamily="@font/poppinsmedium"
@@ -142,7 +142,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="PRESSURE"
+                    android:text="@string/pressure"
                     android:textColor="#80FFFFFF"
                     android:textSize="10sp"
                     android:fontFamily="@font/poppinsmedium"

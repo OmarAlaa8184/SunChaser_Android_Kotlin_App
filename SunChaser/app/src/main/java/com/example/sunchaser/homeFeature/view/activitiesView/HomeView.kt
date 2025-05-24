@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.icu.text.SimpleDateFormat
 import android.os.Bundle
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.productsusingviewbinding.RetrofitClient
 import com.example.sunchaser.R
 import com.example.sunchaser.databinding.ActivityMainBinding
+import com.example.sunchaser.favoriteFeature.view.activitiesView.FavoriteView
+import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModel
+import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModelFactory
 import com.example.sunchaser.homeFeature.view.adapters.CurrentDayAdapter
 import com.example.sunchaser.homeFeature.view.adapters.DailyAdapter
 import com.example.sunchaser.homeFeature.view.adapters.HourlyAdapter
@@ -60,6 +64,8 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
     private lateinit var binding: ActivityMainBinding
     private lateinit var homeViewModelFactory: HomeViewModelFactory
     private lateinit var homeViewModel: HomeViewModel
+    private lateinit var favoriteViewModel: FavoriteViewModel
+    private lateinit var favoriteViewModelFactory: FavoriteViewModelFactory
     private lateinit var lineChart: LineChart
     private val defaultLat = 30.0333
     private val defaultLng = 31.2333
@@ -77,7 +83,6 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
                 binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
             }
         }
-
 
     override fun onCreate(savedInstanceState: Bundle?)
     {
@@ -112,6 +117,13 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
         homeViewModel.fetchForecastByLocation()
 
+        favoriteViewModelFactory= FavoriteViewModelFactory(ForecastRepositoryImpl.getInstance(
+            ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
+            ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())))
+
+        // Initialize ViewModel
+        favoriteViewModel = ViewModelProvider(this, favoriteViewModelFactory)[FavoriteViewModel::class.java]
+
         // Request location
         requestLocationPermission()
 
@@ -129,6 +141,24 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         }
 
         binding.navigationView.setCheckedItem(R.id.nav_home)
+
+        binding.btnAddToFavorites.setOnClickListener {
+            homeViewModel.forecast.value?.let { response ->
+                val lat = response.city.coord.lat.toDouble()
+                val lng = response.city.coord.lon.toDouble()
+                favoriteViewModel.addFavoriteLocation(lat, lng)
+            } ?: run {
+                Toast.makeText(this, "No location data available", Toast.LENGTH_SHORT).show()
+            }
+        }
+        // Observe FavoriteViewModel feedback
+        favoriteViewModel.toastMessage.observe(this) { message ->
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
+
+        favoriteViewModel.error.observe(this) { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+        }
 
         setupDrawer()
 
@@ -163,12 +193,17 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
 
     private fun updateUI(response: ForecastResponse)
     {
+        // Handle Intent from FavoriteActivity
+            intent.extras?.let { extras ->
+            val lat = extras.getDouble("latitude", defaultLat)
+            val lng = extras.getDouble("longitude", defaultLng)
+            homeViewModel.fetchForecast(lat, lng)
+            binding.tvCity.text = "Selected Location"
+            binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
+        }
         // Current Weather
-        findViewById<TextView>(R.id.tvCity).text = "${response.city.name}, ${response.city.country}"
-        findViewById<TextView>(R.id.tvDateTime).text = SimpleDateFormat(
-            "MMM d, yyyy • h:mm a",
-            Locale.getDefault()
-        ).format(Date())
+        binding.tvCity.text = "${response.city.name}, ${response.city.country}"
+        binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
 
         val forecastEntities = response.toEntityList()
 
@@ -210,7 +245,8 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
                     }
                 R.id.nav_favorites->
                     {
-
+                        val intent = Intent(this, FavoriteView::class.java)
+                        startActivity(intent)
                     }
             }
             // Close drawer after click

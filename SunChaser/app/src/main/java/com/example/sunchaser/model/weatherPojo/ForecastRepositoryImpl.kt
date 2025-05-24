@@ -26,12 +26,11 @@ class ForecastRepositoryImpl private constructor(private var forecastRemoteDataS
         return try
         {
             val response = forecastRemoteDataSource.getFiveDayForecast(lat, lon)
-           // forecastLocalDataSource.insertForecasts(response.toEntityList())
             response
         }
         catch (e: Exception)
         {
-            val cachedForecasts = forecastLocalDataSource.getAllStoredForecasts()
+           val cachedForecasts = forecastLocalDataSource.getAllStoredForecasts()
             if (cachedForecasts.isNotEmpty())
             {
                 cachedForecasts.toForecastResponse()
@@ -58,6 +57,16 @@ class ForecastRepositoryImpl private constructor(private var forecastRemoteDataS
     override suspend fun deleteForecast(forecast: ForecastEntity)
     {
         forecastLocalDataSource.deleteForecast(forecast)
+    }
+
+    override suspend fun getFavoriteLocations(): List<ForecastEntity>
+    {
+        return forecastLocalDataSource.getFavoriteLocations()
+    }
+
+    override suspend fun getLocationByCoordinates(lat: Float, lon: Float): ForecastEntity?
+    {
+        return forecastLocalDataSource.getLocationByCoordinates(lat,lon)
     }
 
 }

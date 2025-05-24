@@ -38,6 +38,23 @@ class ForecastLocalDataSourceImpl(val forecastDao: ForecastDao) : ForecastLocalD
         }
     }
 
+    override suspend fun getFavoriteLocations(): List<ForecastEntity> {
+
+        val result= withContext(Dispatchers.IO)
+        {
+            forecastDao.getFavoriteLocations()
+        }
+        return result
+    }
+
+    override suspend fun getLocationByCoordinates(lat: Float, lon: Float): ForecastEntity? {
+
+        val result= withContext(Dispatchers.IO)
+        {
+            forecastDao.getLocationByCoordinates(lat,lon)
+        }
+        return result
+    }
 
 
 }

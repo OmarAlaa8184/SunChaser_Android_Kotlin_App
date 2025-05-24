@@ -27,6 +27,7 @@
 
         <activity android:name=".homeFeature.view.activitiesView.HomeView"/>
          <activity android:name=".mapFeature.view.activitiesview.MapActivity"/>
+        <activity android:name=".favoriteFeature.view.activitiesView.FavoriteView"/>
     </application>
 
 </manifest>

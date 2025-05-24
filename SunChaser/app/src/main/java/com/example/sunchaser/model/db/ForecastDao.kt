@@ -19,4 +19,12 @@ interface ForecastDao
 
     @Delete
     suspend fun delete(forecast: ForecastEntity)
+
+    @Query("SELECT * FROM forecasts_table GROUP BY latitude, longitude")
+    suspend fun getFavoriteLocations(): List<ForecastEntity>
+
+    @Query("SELECT * FROM forecasts_table WHERE latitude = :lat AND longitude = :lon LIMIT 1")
+    suspend fun getLocationByCoordinates(lat: Float, lon: Float): ForecastEntity?
+
+
 }

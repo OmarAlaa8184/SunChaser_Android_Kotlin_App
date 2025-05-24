@@ -39,7 +39,6 @@ class HomeViewModel (private val forecastRepository: ForecastRepository, private
             try
             {
                 val response = forecastRepository.getFiveDayForecast(lat, lon)
-              //  forecastRepository.insertForecasts(response)
                 _forecast.postValue(response)
             }
             catch (e: Exception)

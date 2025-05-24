@@ -10,4 +10,8 @@ interface ForecastLocalDataSource
 
     suspend fun deleteForecast(forecast: ForecastEntity)
 
+    suspend fun getFavoriteLocations(): List<ForecastEntity>
+
+    suspend fun getLocationByCoordinates(lat: Float, lon: Float): ForecastEntity?
+
 }

@@ -64,11 +64,19 @@
                 android:layout_marginBottom="24dp"
                 tools:listitem="@layout/item_current_day" />
 
+            <Button
+                android:id="@+id/btnAddToFavorites"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/add_to_favorites"
+                android:layout_gravity="center"
+                android:layout_marginBottom="16dp"/>
+
             <!-- Hourly Forecast Title -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="HOURLY FORECAST"
+                android:text="@string/hourly_forecast"
                 android:textColor="#B3FFFFFF"
                 android:textSize="12sp"
                 android:fontFamily="@font/poppinsbold"
@@ -87,7 +95,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WEATHER STATISTICS"
+                android:text="@string/weather_statistics"
                 android:textColor="#B3FFFFFF"
                 android:textSize="12sp"
                 android:fontFamily="@font/poppinsbold"
@@ -113,7 +121,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="5-DAY FORECAST"
+                android:text="@string/_5_day_forecast"
                 android:textColor="#B3FFFFFF"
                 android:textSize="12sp"
                 android:fontFamily="@font/poppinsbold"

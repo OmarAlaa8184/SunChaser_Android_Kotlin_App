@@ -4,12 +4,16 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.sunchaser.model.weatherPojo.Alert
 import com.example.sunchaser.model.weatherPojo.ForecastEntity
 
-@Database(entities = [ForecastEntity::class], version = 1,exportSchema = false)
+
+@Database(entities = [ForecastEntity::class , Alert::class], version = 1,exportSchema = false)
 abstract class ForecastDatabase:RoomDatabase()
 {
     abstract fun forecastDao():ForecastDao
+
+    abstract fun alertDao():AlertDao
 
     companion object DatabaseProvider {
         @Volatile

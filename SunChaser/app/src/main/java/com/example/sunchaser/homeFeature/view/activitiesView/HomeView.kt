@@ -19,6 +19,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.productsusingviewbinding.RetrofitClient
 import com.example.sunchaser.R
+import com.example.sunchaser.alertFeature.view.activitiesView.AlertView
+import com.example.sunchaser.alertFeature.viewmodel.AlertViewModel
 import com.example.sunchaser.databinding.ActivityMainBinding
 import com.example.sunchaser.favoriteFeature.view.activitiesView.FavoriteView
 import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModel
@@ -247,6 +249,11 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
                     {
                         val intent = Intent(this, FavoriteView::class.java)
                         startActivity(intent)
+                    }
+                R.id.nav_alarm->
+                    {
+                       val intent = Intent(this, AlertView::class.java)
+                       startActivity(intent)
                     }
             }
             // Close drawer after click

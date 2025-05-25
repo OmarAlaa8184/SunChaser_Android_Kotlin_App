@@ -3,10 +3,14 @@
     <style name="Base.Theme.SunChaser" parent="Theme.Material3.DayNight.NoActionBar">
 
         <item name="colorPrimary">@color/ic_launcher_background</item>
-        <!--item name="android:background">@color/ic_launcher_background</item-->
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#BB8FCE</item>
+        <item name="android:windowBackground">@drawable/bg_gradient_sky</item>
     </style>
 
+    <style name="CalendarViewStyle" parent="Theme.AppCompat.Light">
+        <item name="android:windowBackground">@drawable/bg_gradient_sky</item>
+        <item name="colorPrimary">@color/ic_launcher_background</item>
+    </style>
     <style name="Theme.SunChaser" parent="Base.Theme.SunChaser" />
 </resources>

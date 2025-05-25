@@ -42,6 +42,7 @@ data class Clouds(val all: Int)
 data class Wind(val speed: Float, val deg: Int)
 
 data class City(val name: String, val coord: Coord, val country: String)
+
 data class Coord(val lat: Float, val lon: Float)
 
 
@@ -70,6 +71,42 @@ data class ForecastEntity(
     val dtTxt: String,
     val timestamp: Long = System.currentTimeMillis()
 )
+
+/*@Entity
+data class WeatherAlert(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val date: String,
+    val startTime: Long,
+    val endTime: Long,
+    val durationMinutes: Int,
+    val isAlarmSound: Boolean,
+    val isActive: Boolean = true,
+    val type: AlertType
+)
+
+enum class AlertType {
+    NOTIFICATION, ALARM
+}*/
+
+@Entity(tableName = "weather_alerts")
+data class Alert(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val locationName: String,
+    val latitude: Double,
+    val longitude: Double,
+    val startTime: Long, // Unix timestamp
+    val endTime: Long,   // Unix timestamp
+    val alertType: AlertType,
+    val isActive: Boolean = true
+)
+{
+    enum class AlertType {
+        NOTIFICATION,
+        ALARM_SOUND
+    }
+}
 
 data class DailyForecast(
     val date: String,
@@ -144,27 +181,6 @@ fun List<ForecastEntity>.toForecastResponse(): ForecastResponse
         city = City(name = cityName, coord = Coord(lat, lon), country = country)
     )
 }
-
-
-
-/*fun List<Forecast>.toDailyForecasts(): List<DailyForecast> {
-    val dailyGroups = this.groupBy { forecast ->
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            .format(Date(forecast.dt * 1000))
-    }
-    return dailyGroups.map { (date, forecasts) ->
-        val avgTemp = forecasts.map { it.main.temp }.average().toFloat()
-        val mostFrequentWeather = forecasts.groupBy { it.weather[0].icon }
-            .maxByOrNull { it.value.size }?.value?.first()?.weather?.first()
-            ?: forecasts.first().weather.first()
-        DailyForecast(
-            date = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-                .format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)!!),
-            avgTemp = avgTemp,
-            weather = mostFrequentWeather
-        )
-    }
-}*/
 
 // Group ForecastEntity by day and convert to DailyForecast-like data
  fun List<ForecastEntity>.toDailyForecasts(): List<DailyForecast>

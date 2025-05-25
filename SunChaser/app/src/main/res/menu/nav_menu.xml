@@ -14,6 +14,10 @@
             android:icon="@drawable/ic_map"
             android:title="@string/map" />
         <item
+            android:id="@+id/nav_alarm"
+            android:icon="@drawable/ic_alert"
+            android:title="@string/alarm" />
+        <item
             android:id="@+id/nav_setting"
             android:icon="@drawable/ic_setting"
             android:title="@string/setting" />

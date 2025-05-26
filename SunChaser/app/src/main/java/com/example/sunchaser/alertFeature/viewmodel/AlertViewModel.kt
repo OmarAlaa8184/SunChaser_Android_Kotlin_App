@@ -39,69 +39,6 @@ class AlertViewModelFactory(val alertLocalDataSource: AlertLocalDataSource,val c
 
 class AlertViewModel(private val alertLocalDataSource: AlertLocalDataSource, private val context: Context) : ViewModel() {
 
-    /*        private val _alerts = MutableLiveData<List<WeatherAlert>>()
-    val alerts: LiveData<List<WeatherAlert>> get() = _alerts
-
-    init {
-        viewModelScope.launch {
-            _alerts.value = alertLocalDataSource.getAllAlerts()
-        }
-    }
-
-    fun addAlert(alert: WeatherAlert) {
-        viewModelScope.launch {
-            alertLocalDataSource.insertAlert(alert)
-            scheduleAlert(alert)
-            _alerts.value = alertLocalDataSource.getAllAlerts()
-        }
-    }
-
-    fun deleteAlert(id: Int) {
-        viewModelScope.launch {
-            alertLocalDataSource.deleteAlert(id)
-            _alerts.value = alertLocalDataSource.getAllAlerts()
-        }
-    }
-
-    fun toggleAlertActive(id: Int, isActive: Boolean)
-    {
-        viewModelScope.launch{
-
-            val allAlerts = alertLocalDataSource.getAllAlerts()
-            val targetAlert = allAlerts.find { it.id == id }
-            targetAlert?.let {
-                val updatedAlert = it.copy(isActive = isActive)
-                alertLocalDataSource.updateAlert(updatedAlert)
-                _alerts.value = alertLocalDataSource.getAllAlerts()
-            }
-        }
-    }
-
-    private fun scheduleAlert(alert: WeatherAlert) {
-        if (!alert.isActive) return
-
-        val now = System.currentTimeMillis()
-        val delayMillis = alert.startTime - now
-
-        // If the alert is in the past, don't schedule it
-        if (delayMillis <= 0) return
-
-        val data = Data.Builder()
-            .putString("type", alert.type.name)
-            .putLong("endTime", alert.endTime)
-            .build()
-
-        val work = OneTimeWorkRequestBuilder<AlertWorker>()
-            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-            .setInputData(data)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "alert_${alert.id}",
-            ExistingWorkPolicy.REPLACE,
-            work
-        )
-    }*/
 
     private val _alerts = MutableLiveData<List<Alert>>()
     val alerts: LiveData<List<Alert>> get() = _alerts

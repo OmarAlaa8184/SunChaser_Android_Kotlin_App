@@ -24,12 +24,17 @@ import com.example.sunchaser.model.db.ForecastLocalDataSourceImpl
 import com.example.sunchaser.model.network.ForecastRemoteDataSourceImpl
 import com.example.sunchaser.model.weatherPojo.ForecastRepositoryImpl
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.example.sunchaser.alertFeature.view.activitiesView.AlertView
 import com.example.sunchaser.databinding.ActivityFavoriteBinding
 import com.example.sunchaser.databinding.ItemFavoriteBinding
 import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModel
 import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModelFactory
 import com.example.sunchaser.mapFeature.view.activitiesview.MapActivity
+import com.example.sunchaser.model.db.SettingsLocalDataSourceImpl
 import com.example.sunchaser.model.network.Location
+import com.example.sunchaser.model.weatherPojo.SettingsManager
+import com.example.sunchaser.settingsFeature.view.SettingsView
 import java.util.Date
 import java.util.Locale
 
@@ -91,9 +96,11 @@ class FavoriteView : AppCompatActivity()
 
         binding.rvFavorites.adapter=favoriteAdapter
 
-        favoriteViewModelFactory=FavoriteViewModelFactory(ForecastRepositoryImpl.getInstance(
+        favoriteViewModelFactory= FavoriteViewModelFactory(ForecastRepositoryImpl.getInstance(
             ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
-            ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())))
+            ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())),
+            SettingsLocalDataSourceImpl(ForecastDatabase.getInstance(this).settingsDao())
+        )
 
         favoriteViewModel = ViewModelProvider(this, favoriteViewModelFactory)[FavoriteViewModel::class.java]
 
@@ -105,19 +112,26 @@ class FavoriteView : AppCompatActivity()
 
         binding.navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
-                R.id.nav_home -> {
+                R.id.nav_home ->
+                    {
                     startActivity(Intent(this, HomeView::class.java))
                     finish()
                     true
-                }
+                   }
 
                 R.id.nav_favorites -> {
                     binding.drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
 
-                R.id.nav_setting -> {
-                    // Handle Settings
+                R.id.nav_setting ->
+                    {
+                        startActivity(Intent(this, SettingsView::class.java))
+                    }
+                R.id.nav_alarm->
+                {
+                    val intent = Intent(this, AlertView::class.java)
+                    startActivity(intent)
                 }
 
                 R.id.nav_map -> {
@@ -143,11 +157,28 @@ class FavoriteView : AppCompatActivity()
             favoriteViewModel.toastMessage.observe(this) { message ->
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
-
+        observeSettingsChanges()
         // Load favorites
         favoriteViewModel.loadFavorites()
     }
 
+    private fun observeSettingsChanges() {
+        lifecycleScope.launchWhenStarted {
+            SettingsManager.settingsFlow.collect { settings ->
+                // Update locale
+                val language = settings.language
+                val locale = if (language == "Arabic") Locale("ar") else Locale("en")
+                Locale.setDefault(locale)
+                val config = resources.configuration
+                config.setLocale(locale)
+                resources.updateConfiguration(config, resources.displayMetrics)
+
+                // Refresh UI elements
+                binding.navigationView.menu.clear()
+                binding.navigationView.inflateMenu(R.menu.nav_menu) // Re-inflate menu to apply language changes
+            }
+        }
+    }
         override fun onBackPressed()
         {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {

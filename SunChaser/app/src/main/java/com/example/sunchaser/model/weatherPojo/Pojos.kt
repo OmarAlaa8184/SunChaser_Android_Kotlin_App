@@ -72,23 +72,6 @@ data class ForecastEntity(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-/*@Entity
-data class WeatherAlert(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val date: String,
-    val startTime: Long,
-    val endTime: Long,
-    val durationMinutes: Int,
-    val isAlarmSound: Boolean,
-    val isActive: Boolean = true,
-    val type: AlertType
-)
-
-enum class AlertType {
-    NOTIFICATION, ALARM
-}*/
-
 @Entity(tableName = "weather_alerts")
 data class Alert(
     @PrimaryKey(autoGenerate = true)
@@ -107,6 +90,19 @@ data class Alert(
         ALARM_SOUND
     }
 }
+
+@Entity(tableName = "settings")
+data class Settings(
+    @PrimaryKey
+    val id: Int = 0,
+    val locationSource: String = "GPS", // "GPS" or "MAP"
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
+    val locationName: String = "Current Location",
+    val temperatureUnit: String = "Celsius", // Kelvin, Celsius, Fahrenheit
+    val windSpeedUnit: String = "meters/sec", // meters/sec, miles/hour
+    val language: String = "English" // English, Arabic
+)
 
 data class DailyForecast(
     val date: String,
@@ -213,3 +209,26 @@ fun List<ForecastEntity>.toForecastResponse(): ForecastResponse
 fun Long.toHourlyFormat(): String {
     return SimpleDateFormat("h a", Locale.getDefault()).format(Date(this * 1000))
 }
+
+/*object SettingsConstants {
+    const val PREFS_NAME = "SettingsPrefs"
+    const val KEY_LOCATION_SOURCE = "locationSource"
+    const val KEY_TEMP_UNIT = "tempUnit"
+    const val KEY_WIND_UNIT = "windUnit"
+    const val KEY_LANGUAGE = "language"
+
+    const val LOCATION_GPS = "gps"
+    const val LOCATION_MAP = "map"
+    const val TEMP_KELVIN = "Kelvin"
+    const val TEMP_CELSIUS = "Celsius"
+    const val TEMP_FAHRENHEIT = "Fahrenheit"
+    const val WIND_MPS = "meters/sec"
+    const val WIND_MPH = "miles/hour"
+    const val LANGUAGE_ENGLISH = "English"
+    const val LANGUAGE_ARABIC = "Arabic"
+
+    val DEFAULT_LOCATION_SOURCE = LOCATION_GPS
+    val DEFAULT_TEMP_UNIT = TEMP_CELSIUS
+    val DEFAULT_WIND_UNIT = WIND_MPS
+    val DEFAULT_LANGUAGE = LANGUAGE_ENGLISH
+}*/

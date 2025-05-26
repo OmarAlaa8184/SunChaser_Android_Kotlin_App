@@ -4,5 +4,5 @@ import com.example.sunchaser.model.weatherPojo.ForecastResponse
 
 interface ForecastRemoteDataSource
 {
-    suspend fun getFiveDayForecast(lat: Double, lon: Double): ForecastResponse
+    suspend fun getFiveDayForecast(lat: Double, lon: Double, units: String, lang: String): ForecastResponse
 }

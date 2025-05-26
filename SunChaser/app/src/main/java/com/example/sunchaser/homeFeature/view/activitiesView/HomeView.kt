@@ -7,8 +7,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.icu.text.SimpleDateFormat
 import android.os.Bundle
-import android.util.Log
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -16,11 +14,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.productsusingviewbinding.RetrofitClient
 import com.example.sunchaser.R
 import com.example.sunchaser.alertFeature.view.activitiesView.AlertView
-import com.example.sunchaser.alertFeature.viewmodel.AlertViewModel
 import com.example.sunchaser.databinding.ActivityMainBinding
 import com.example.sunchaser.favoriteFeature.view.activitiesView.FavoriteView
 import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModel
@@ -37,23 +35,25 @@ import com.example.sunchaser.homeFeature.viewmodel.HomeViewModelFactory
 import com.example.sunchaser.mapFeature.view.activitiesview.MapActivity
 import com.example.sunchaser.model.db.ForecastDatabase
 import com.example.sunchaser.model.db.ForecastLocalDataSourceImpl
+import com.example.sunchaser.model.db.SettingsLocalDataSource
+import com.example.sunchaser.model.db.SettingsLocalDataSourceImpl
 import com.example.sunchaser.model.network.ForecastRemoteDataSourceImpl
 import com.example.sunchaser.model.network.Location
 import com.example.sunchaser.model.weatherPojo.ForecastEntity
 import com.example.sunchaser.model.weatherPojo.ForecastRepositoryImpl
 import com.example.sunchaser.model.weatherPojo.ForecastResponse
+import com.example.sunchaser.model.weatherPojo.Settings
+import com.example.sunchaser.model.weatherPojo.SettingsManager
 import com.example.sunchaser.model.weatherPojo.StatisticItem
 import com.example.sunchaser.model.weatherPojo.toEntityList
 import com.example.sunchaser.model.weatherPojo.toHourlyFormat
+import com.example.sunchaser.settingsFeature.view.SettingsView
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 
@@ -114,14 +114,14 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
                 ForecastRepositoryImpl.getInstance(
                 ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
                 ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())),
-                Location(this))
+                Location(this),SettingsLocalDataSourceImpl(ForecastDatabase.getInstance(this).settingsDao()))
 
         homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
         homeViewModel.fetchForecastByLocation()
 
         favoriteViewModelFactory= FavoriteViewModelFactory(ForecastRepositoryImpl.getInstance(
             ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
-            ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())))
+            ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())),SettingsLocalDataSourceImpl(ForecastDatabase.getInstance(this).settingsDao()))
 
         // Initialize ViewModel
         favoriteViewModel = ViewModelProvider(this, favoriteViewModelFactory)[FavoriteViewModel::class.java]
@@ -163,9 +163,34 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         }
 
         setupDrawer()
-
+        observeSettingsChanges()
     }
 
+    private fun observeSettingsChanges()
+    {
+        lifecycleScope.launchWhenStarted {
+            SettingsManager.settingsFlow.collect { settings ->
+                // Update locale
+                val language = settings.language
+                val locale = if (language == "Arabic") Locale("ar") else Locale("en")
+                Locale.setDefault(locale)
+                val config = resources.configuration
+                config.setLocale(locale)
+                resources.updateConfiguration(config, resources.displayMetrics)
+
+                // Refresh UI elements that depend on settings
+                updateUILabels()
+            }
+        }
+    }
+
+    private fun updateUILabels() {
+        // Update any UI elements that might be affected by language or unit changes
+        binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
+        homeViewModel.forecast.value?.let { response ->
+            updateUI(response)
+        }
+    }
     private fun requestLocationPermission()
     {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
@@ -207,7 +232,7 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         binding.tvCity.text = "${response.city.name}, ${response.city.country}"
         binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
 
-        val forecastEntities = response.toEntityList()
+       // val forecastEntities = response.toEntityList()
 
         //Card
         currentDayAdapter.submitList(response.toEntityList())
@@ -219,7 +244,7 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         dailyAdapter.submitList(response.toEntityList())
 
 
-        val hourlyForecasts = forecastEntities.take(8)
+        val hourlyForecasts = response.toEntityList().take(8)
         updateTemperatureChart(hourlyForecasts)
         updateStatistics(hourlyForecasts)
 
@@ -238,7 +263,8 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
                     }
                 R.id.nav_setting ->
                     {
-                       // Handle Settings
+                        val intent = Intent(this, SettingsView::class.java)
+                        startActivity(intent)
                     }
                 R.id.nav_map->
                     {
@@ -262,12 +288,13 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         }
     }
 
-    override fun onStart() {
+    override fun onStart()
+    {
         super.onStart()
         binding.navigationView.setCheckedItem(R.id.nav_home)
     }
 
-    private fun updateTemperatureChart(forecasts: List<ForecastEntity>)
+   /* private fun updateTemperatureChart(forecasts: List<ForecastEntity>)
     {
         val entries = forecasts.mapIndexed { index, forecast ->
             Entry(index.toFloat(), forecast.temp)
@@ -301,9 +328,51 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
             legend.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
             invalidate()
         }
-    }
+    }*/
 
-    private fun updateStatistics(forecasts: List<ForecastEntity>)
+    private fun updateTemperatureChart(forecasts: List<ForecastEntity>) {
+       val settings = SettingsManager.currentSettings.value ?: Settings()
+       val unitLabel = when (settings.temperatureUnit) {
+           "Kelvin" -> "K"
+           "Fahrenheit" -> "°F"
+           else -> "°C"
+       }
+       val entries = forecasts.mapIndexed { index, forecast ->
+           Entry(index.toFloat(), forecast.temp)
+       }
+       val dataSet = LineDataSet(entries, "Temperature ($unitLabel)").apply {
+           color = ContextCompat.getColor(this@HomeView, R.color.white)
+           valueTextColor = ContextCompat.getColor(this@HomeView, R.color.white)
+           lineWidth = 2f
+           setDrawCircles(true)
+           setCircleColor(ContextCompat.getColor(this@HomeView, R.color.white))
+           setDrawValues(false)
+       }
+       val lineData = LineData(dataSet)
+       lineChart.apply {
+           data = lineData
+           description.isEnabled = false
+           setTouchEnabled(true)
+           isDragEnabled = true
+           setScaleEnabled(true)
+           setPinchZoom(true)
+           setBackgroundColor(Color.TRANSPARENT)
+           xAxis.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
+           xAxis.position = XAxis.XAxisPosition.BOTTOM
+           xAxis.valueFormatter = object : ValueFormatter() {
+               override fun getFormattedValue(value: Float): String {
+                   return forecasts.getOrNull(value.toInt())?.dt?.toHourlyFormat() ?: ""
+               }
+           }
+           axisLeft.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
+           axisRight.isEnabled = false
+           legend.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
+           invalidate()
+       }
+   }
+
+
+    /*private fun updateStatistics(forecasts: List<ForecastEntity>)
     {
         val stats = mutableListOf<StatisticItem>()
         val avgTemp = forecasts.map { it.temp }.average().toFloat()
@@ -317,6 +386,27 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         stats.add(StatisticItem("Average Humidity", "${avgHumidity.toInt()}%"))
 
         statisticsAdapter.submitList(stats)
+    }*/
+
+    private fun updateStatistics(forecasts: List<ForecastEntity>) {
+        val settings = SettingsManager.currentSettings.value ?: Settings()
+        val tempUnit = when (settings.temperatureUnit) {
+            "Kelvin" -> "K"
+            "Fahrenheit" -> "°F"
+            else -> "°C"
+        }
+        val stats = mutableListOf<StatisticItem>()
+        val avgTemp = forecasts.map { it.temp }.average().toFloat()
+        val maxTemp = forecasts.maxOfOrNull { it.temp } ?: 0f
+        val minTemp = forecasts.minOfOrNull { it.temp } ?: 0f
+        val avgHumidity = forecasts.map { it.humidity }.average().toFloat()
+
+        stats.add(StatisticItem("Average Temperature", "${avgTemp.toInt()}$tempUnit"))
+        stats.add(StatisticItem("Max Temperature", "${maxTemp.toInt()}$tempUnit"))
+        stats.add(StatisticItem("Min Temperature", "${minTemp.toInt()}$tempUnit"))
+        stats.add(StatisticItem("Average Humidity", "${avgHumidity.toInt()}%"))
+
+        statisticsAdapter.submitList(stats)
     }
 
     override fun onBackPressed()
@@ -327,4 +417,7 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
             super.onBackPressed()
         }
     }
+
+
+
 }

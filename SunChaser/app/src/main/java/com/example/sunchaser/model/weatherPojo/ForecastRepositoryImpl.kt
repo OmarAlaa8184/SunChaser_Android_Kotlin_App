@@ -21,11 +21,11 @@ class ForecastRepositoryImpl private constructor(private var forecastRemoteDataS
 
     }
 
-    override suspend fun getFiveDayForecast(lat: Double, lon: Double): ForecastResponse
+    override suspend fun getFiveDayForecast(lat: Double, lon: Double, units: String, lang: String): ForecastResponse
     {
         return try
         {
-            val response = forecastRemoteDataSource.getFiveDayForecast(lat, lon)
+            val response = forecastRemoteDataSource.getFiveDayForecast(lat, lon,units,lang)
             response
         }
         catch (e: Exception)

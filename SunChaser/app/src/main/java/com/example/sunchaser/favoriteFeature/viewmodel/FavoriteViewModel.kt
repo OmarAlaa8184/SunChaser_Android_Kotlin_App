@@ -5,22 +5,24 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.sunchaser.model.db.SettingsLocalDataSource
 import com.example.sunchaser.model.weatherPojo.ForecastEntity
 import com.example.sunchaser.model.weatherPojo.ForecastRepository
 import com.example.sunchaser.model.weatherPojo.ForecastResponse
+import com.example.sunchaser.model.weatherPojo.Settings
 import com.example.sunchaser.model.weatherPojo.toEntityList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
-class FavoriteViewModelFactory(private val repository: ForecastRepository) : ViewModelProvider.Factory
+class FavoriteViewModelFactory(private val repository: ForecastRepository,private val settingsLocalDataSource: SettingsLocalDataSource) : ViewModelProvider.Factory
 {
     override fun <T : ViewModel> create(modelClass: Class<T>): T
     {
         if (modelClass.isAssignableFrom(FavoriteViewModel::class.java))
         {
-            return FavoriteViewModel(repository) as T
+            return FavoriteViewModel(repository,settingsLocalDataSource) as T
         }
         else
         {
@@ -30,7 +32,7 @@ class FavoriteViewModelFactory(private val repository: ForecastRepository) : Vie
 }
 
 
-class FavoriteViewModel(private val repository: ForecastRepository) : ViewModel() {
+class FavoriteViewModel(private val repository: ForecastRepository,private val settingsLocalDataSource: SettingsLocalDataSource) : ViewModel() {
 
     private val _favorites = MutableLiveData<List<ForecastEntity>>()
     val favorites: LiveData<List<ForecastEntity>> get() = _favorites
@@ -41,6 +43,15 @@ class FavoriteViewModel(private val repository: ForecastRepository) : ViewModel(
     private val _toastMessage = MutableLiveData<String>()
     val toastMessage: LiveData<String> get() = _toastMessage
 
+    private val _settings = MutableLiveData<Settings>()
+    val settings: LiveData<Settings> get() = _settings
+
+    init {
+        viewModelScope.launch {
+            _settings.value = settingsLocalDataSource.getSettings() ?: Settings()
+            loadFavorites()
+        }
+    }
     fun loadFavorites()
     {
         viewModelScope.launch{
@@ -73,11 +84,19 @@ class FavoriteViewModel(private val repository: ForecastRepository) : ViewModel(
                     _toastMessage.postValue("Location already in favorites")
                     return@launch
                 }
+                // Fetch weather data with user-selected units and language
+                val settings = settingsLocalDataSource.getSettings() ?: Settings()
+                val unit = when (settings.temperatureUnit) {
+                    "Kelvin" -> "standard"
+                    "Fahrenheit" -> "imperial"
+                    else -> "metric"
+                }
+                val lang = if (settings.language == "Arabic") "ar" else "en"
 
                 // Fetch weather data
                 val response: ForecastResponse = withContext(Dispatchers.IO)
                 {
-                    repository.getFiveDayForecast(lat, lng)
+                    repository.getFiveDayForecast(lat, lng,unit,lang)
                 }
                 val forecast = response.toEntityList().firstOrNull()
                 if (forecast == null) {

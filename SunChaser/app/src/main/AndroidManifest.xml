@@ -44,6 +44,7 @@
         <activity android:name=".mapFeature.view.activitiesview.MapActivity" />
         <activity android:name=".favoriteFeature.view.activitiesView.FavoriteView" />
         <activity android:name=".alertFeature.view.activitiesView.AlertView" />
+        <activity android:name=".settingsFeature.view.SettingsView"/>
     </application>
 
 </manifest>

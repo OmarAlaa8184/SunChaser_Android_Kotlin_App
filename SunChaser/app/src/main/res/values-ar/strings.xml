@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">مطارد الشمس</string>
+    <string name="home">الرئيسية</string>
+    <string name="favorites">المفضلة</string>
+    <string name="map">الخريطة</string>
+    <string name="setting">الإعدادات</string>
+    <string name="navigation_drawer_open">فتح قائمة التنقل</string>
+    <string name="navigation_drawer_close">إغلاق قائمة التنقل</string>
+    <string name="favorite_locations">المواقع المفضلة</string>
+    <string name="add_to_favorites">إضافة إلى المفضلة</string>
+    <string name="hourly_forecast">توقعات كل ساعة</string>
+    <string name="weather_statistics">إحصائيات الطقس</string>
+    <string name="_5_day_forecast">توقعات 5 أيام</string>
+    <string name="are_you_sure_you_want_to_delete_this_location">هل أنت متأكد أنك تريد حذف هذا الموقع؟</string>
+    <string name="cancel">إلغاء</string>
+    <string name="delete">حذف</string>
+    <string name="humidity">الرطوبة</string>
+    <string name="wind">الرياح</string>
+    <string name="pressure">الضغط</string>
+    <string name="alarm">المنبه</string>
+    <string name="select_date">اختر التاريخ</string>
+    <string name="select_start_time">اختر وقت البدء</string>
+    <string name="alarm_sound_notification">صوت المنبه / الإشعار</string>
+    <string name="add_alert">إضافة تنبيه</string>
+    <string name="duration_minutes">المدة (بالدقائق):</string>
+    <string name="select_end_time">اختر وقت الانتهاء</string>
+    <string name="active">نشط</string>
+    <string name="are_you_sure_you_want_to_delete_this_alert">هل أنت متأكد أنك تريد حذف هذا التنبيه؟</string>
+    <string name="settings">الإعدادات</string>
+    <string name="location_source">مصدر الموقع</string>
+    <string name="gps">نظام تحديد المواقع</string>
+    <string name="temperature_unit">وحدة درجة الحرارة</string>
+    <string name="wind_speed_unit">وحدة سرعة الرياح</string>
+    <string name="language">اللغة</string>
+    <string name="average_temperature">متوسط درجة الحرارة</string>
+    <string name="max_temperature">أقصى درجة حرارة</string>
+    <string name="min_temperature">أدنى درجة حرارة</string>
+    <string name="average_humidity">متوسط الرطوبة</string>
+</resources>

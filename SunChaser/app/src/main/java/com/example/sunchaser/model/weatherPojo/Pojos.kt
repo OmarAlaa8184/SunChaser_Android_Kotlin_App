@@ -91,9 +91,8 @@ data class Alert(
     }
 }
 
-@Entity(tableName = "settings")
+
 data class Settings(
-    @PrimaryKey
     val id: Int = 0,
     val locationSource: String = "GPS", // "GPS" or "MAP"
     val latitude: Double = 0.0,

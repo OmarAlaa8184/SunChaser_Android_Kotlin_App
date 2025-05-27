@@ -33,19 +33,17 @@ import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModelFactory
 import com.example.sunchaser.mapFeature.view.activitiesview.MapActivity
 import com.example.sunchaser.model.db.SettingsLocalDataSourceImpl
 import com.example.sunchaser.model.network.Location
+import com.example.sunchaser.model.weatherPojo.Settings
 import com.example.sunchaser.model.weatherPojo.SettingsManager
 import com.example.sunchaser.settingsFeature.view.SettingsView
 import java.util.Date
 import java.util.Locale
 
-
-class FavoriteView : AppCompatActivity()
-{
+class FavoriteView : AppCompatActivity() {
     private lateinit var favoriteViewModel: FavoriteViewModel
     private lateinit var favoriteAdapter: FavoriteAdapter
     private lateinit var binding: ActivityFavoriteBinding
     private lateinit var favoriteViewModelFactory: FavoriteViewModelFactory
-
 
     private val mapActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -53,38 +51,32 @@ class FavoriteView : AppCompatActivity()
             val lat = data?.getDoubleExtra("latitude", 0.0) ?: 0.0
             val lng = data?.getDoubleExtra("longitude", 0.0) ?: 0.0
             favoriteViewModel.addFavoriteLocation(lat, lng)
-
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?)
-    {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        binding=ActivityFavoriteBinding.inflate(layoutInflater)
+        applyLocale()
+        binding = ActivityFavoriteBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.rvFavorites.layoutManager=LinearLayoutManager(this,LinearLayoutManager.VERTICAL,false)
-
+        binding.rvFavorites.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         favoriteAdapter = FavoriteAdapter(
-              onDeleteClick = { forecast ->
-                  val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delete_confirmation, null)
-                  val alertDialog = AlertDialog.Builder(this)
-                      .setView(dialogView)
-                      .setCancelable(false)
-                      .create()
-
-                  dialogView.findViewById<Button>(R.id.btnCancel).setOnClickListener {
-                      alertDialog.dismiss()
-                  }
-
-                  dialogView.findViewById<Button>(R.id.btnDelete).setOnClickListener {
-                      favoriteViewModel.deleteFavorite(forecast)
-                      alertDialog.dismiss()
-                  }
-
-                  alertDialog.show()
-                },
+            onDeleteClick = { forecast ->
+                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delete_confirmation, null)
+                val alertDialog = AlertDialog.Builder(this)
+                    .setView(dialogView)
+                    .setCancelable(false)
+                    .create()
+                dialogView.findViewById<Button>(R.id.btnCancel).setOnClickListener {
+                    alertDialog.dismiss()
+                }
+                dialogView.findViewById<Button>(R.id.btnDelete).setOnClickListener {
+                    favoriteViewModel.deleteFavorite(forecast)
+                    alertDialog.dismiss()
+                }
+                alertDialog.show()
+            },
             onItemClick = { forecast ->
                 val intent = Intent(this, HomeView::class.java).apply {
                     putExtra("latitude", forecast.latitude.toDouble())
@@ -93,98 +85,92 @@ class FavoriteView : AppCompatActivity()
                 startActivity(intent)
             }
         )
+        binding.rvFavorites.adapter = favoriteAdapter
 
-        binding.rvFavorites.adapter=favoriteAdapter
-
-        favoriteViewModelFactory= FavoriteViewModelFactory(ForecastRepositoryImpl.getInstance(
-            ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
-            ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())),
-            SettingsLocalDataSourceImpl(ForecastDatabase.getInstance(this).settingsDao())
+        favoriteViewModelFactory = FavoriteViewModelFactory(
+            ForecastRepositoryImpl.getInstance(
+                ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
+                ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())
+            ),
+            SettingsLocalDataSourceImpl(this)
         )
-
         favoriteViewModel = ViewModelProvider(this, favoriteViewModelFactory)[FavoriteViewModel::class.java]
 
         binding.ivMenu.setOnClickListener {
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }
-
         binding.navigationView.setCheckedItem(R.id.nav_favorites)
-
         binding.navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
-                R.id.nav_home ->
-                    {
+                R.id.nav_home -> {
                     startActivity(Intent(this, HomeView::class.java))
                     finish()
                     true
-                   }
-
+                }
                 R.id.nav_favorites -> {
                     binding.drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
-
-                R.id.nav_setting ->
-                    {
-                        startActivity(Intent(this, SettingsView::class.java))
-                    }
-                R.id.nav_alarm->
-                {
-                    val intent = Intent(this, AlertView::class.java)
-                    startActivity(intent)
+                R.id.nav_setting -> {
+                    startActivity(Intent(this, SettingsView::class.java))
+                    true
                 }
-
+                R.id.nav_alarm -> {
+                    startActivity(Intent(this, AlertView::class.java))
+                    true
+                }
                 R.id.nav_map -> {
                     val intent = Intent(this, MapActivity::class.java)
                     mapActivityResultLauncher.launch(intent)
+                    true
                 }
-
+                else -> false
             }
-            // Close drawer after click
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
-            true
         }
 
-        // Observe ViewModel data
-            favoriteViewModel.favorites.observe(this) { favorites ->
+        favoriteViewModel.favorites.observe(this) { favorites ->
             favoriteAdapter.submitList(favorites)
         }
-
-            favoriteViewModel.error.observe(this) { error ->
+        favoriteViewModel.error.observe(this) { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()
         }
-
-            favoriteViewModel.toastMessage.observe(this) { message ->
+        favoriteViewModel.toastMessage.observe(this) { message ->
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
         observeSettingsChanges()
-        // Load favorites
         favoriteViewModel.loadFavorites()
+    }
+
+    private fun applyLocale() {
+        val settings = SettingsManager.currentSettings.value ?: Settings()
+        val locale = if (settings.language == "Arabic") Locale("ar") else Locale("en")
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     private fun observeSettingsChanges() {
         lifecycleScope.launchWhenStarted {
             SettingsManager.settingsFlow.collect { settings ->
-                // Update locale
-                val language = settings.language
-                val locale = if (language == "Arabic") Locale("ar") else Locale("en")
-                Locale.setDefault(locale)
-                val config = resources.configuration
-                config.setLocale(locale)
-                resources.updateConfiguration(config, resources.displayMetrics)
-
-                // Refresh UI elements
-                binding.navigationView.menu.clear()
-                binding.navigationView.inflateMenu(R.menu.nav_menu) // Re-inflate menu to apply language changes
+                val currentLocale = resources.configuration.locale
+                val newLocale = if (settings.language == "Arabic") Locale("ar") else Locale("en")
+                if (currentLocale.language != newLocale.language) {
+                    recreate()
+                } else {
+                    binding.navigationView.menu.clear()
+                    binding.navigationView.inflateMenu(R.menu.nav_menu)
+                    favoriteAdapter.notifyDataSetChanged()
+                }
             }
         }
     }
-        override fun onBackPressed()
-        {
-            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                binding.drawerLayout.closeDrawer(GravityCompat.START)
-            } else {
-                super.onBackPressed()
-            }
+
+    override fun onBackPressed() {
+        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
         }
+    }
 }

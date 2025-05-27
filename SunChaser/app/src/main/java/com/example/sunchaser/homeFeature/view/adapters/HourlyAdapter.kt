@@ -9,10 +9,12 @@ import com.bumptech.glide.Glide
 import com.example.sunchaser.homeFeature.view.listener.OnHourlyForecastClickListener
 import com.example.sunchaser.databinding.ItemHourlyForecastBinding
 import com.example.sunchaser.model.weatherPojo.ForecastEntity
+import com.example.sunchaser.model.weatherPojo.Settings
+import com.example.sunchaser.model.weatherPojo.SettingsManager
 import com.example.sunchaser.model.weatherPojo.toHourlyFormat
 
 
-class HourlyAdapter(private val onForecastClickListener: OnHourlyForecastClickListener) : ListAdapter<ForecastEntity, HourlyAdapter.ForecastViewHolder>(HourlyForecastDiffCallback())
+/*class HourlyAdapter(private val onForecastClickListener: OnHourlyForecastClickListener) : ListAdapter<ForecastEntity, HourlyAdapter.ForecastViewHolder>(HourlyForecastDiffCallback())
 {
 
     lateinit var binding: ItemHourlyForecastBinding
@@ -66,4 +68,66 @@ class HourlyForecastDiffCallback:DiffUtil.ItemCallback<ForecastEntity>()
                 oldItem.weatherDescription == newItem.weatherDescription
     }
 
+}*/
+class HourlyAdapter(private val onForecastClickListener: OnHourlyForecastClickListener) : ListAdapter<ForecastEntity, HourlyAdapter.ForecastViewHolder>(HourlyForecastDiffCallback()) {
+    lateinit var binding: ItemHourlyForecastBinding
+
+    class ForecastViewHolder(var binding: ItemHourlyForecastBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ForecastViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        binding = ItemHourlyForecastBinding.inflate(inflater, parent, false)
+        return ForecastViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: ForecastViewHolder, position: Int) {
+        if (position >= hourlyForecasts.size) return // Safety check
+
+        val forecast = hourlyForecasts[position]
+        val settings = SettingsManager.currentSettings.value ?: Settings()
+
+        // Map temperature unit
+        val tempUnit = when (settings.temperatureUnit) {
+            "Kelvin" -> "K"
+            "Fahrenheit" -> "°F"
+            else -> "°C"
+        }
+
+        // Convert temperature (assuming API returns Kelvin)
+//        val displayTemp = when (settings.temperatureUnit) {
+//            "Celsius" -> forecast.temp - 273.15 // Kelvin to Celsius
+//            "Fahrenheit" -> (forecast.temp - 273.15) * 9 / 5 + 32 // Kelvin to Fahrenheit
+//            else -> forecast.temp // Kelvin
+//        }
+        val displayTemp = forecast.temp
+
+        holder.binding.tvHour.text = forecast.dt.toHourlyFormat() // Uses Locale.getDefault()
+        holder.binding.tvHourlyTemp.text = "${displayTemp.toInt()}$tempUnit"
+        Glide.with(holder.itemView.context)
+            .load("https://openweathermap.org/img/w/${forecast.weatherIcon}.png")
+            .into(holder.binding.ivHourlyIcon)
+    }
+
+    override fun getItemCount(): Int = hourlyForecasts.size
+
+    // Cache hourly forecasts to avoid recomputing
+    private var hourlyForecasts: List<ForecastEntity> = emptyList()
+
+    override fun submitList(list: List<ForecastEntity>?) {
+        super.submitList(list)
+        hourlyForecasts = list?.take(8) ?: emptyList()
+    }
+}
+
+class HourlyForecastDiffCallback : DiffUtil.ItemCallback<ForecastEntity>() {
+    override fun areItemsTheSame(oldItem: ForecastEntity, newItem: ForecastEntity): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: ForecastEntity, newItem: ForecastEntity): Boolean {
+        return oldItem.dt == newItem.dt &&
+                oldItem.temp == newItem.temp &&
+                oldItem.weatherIcon == newItem.weatherIcon &&
+                oldItem.weatherDescription == newItem.weatherDescription
+    }
 }

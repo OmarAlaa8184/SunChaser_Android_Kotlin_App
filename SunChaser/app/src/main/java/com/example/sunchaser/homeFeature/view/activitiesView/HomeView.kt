@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -54,11 +55,12 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 
-class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClickListener,OnCurrentDayClickListener
-{
+
+class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClickListener, OnCurrentDayClickListener {
     private lateinit var hourlyAdapter: HourlyAdapter
     private lateinit var dailyAdapter: DailyAdapter
     private lateinit var currentDayAdapter: CurrentDayAdapter
@@ -71,7 +73,6 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
     private lateinit var lineChart: LineChart
     private val defaultLat = 30.0333
     private val defaultLng = 31.2333
-
     private val REQUEST_LOCATION_PERMISSION = 1
 
     private val mapActivityResultLauncher =
@@ -89,61 +90,63 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
     override fun onCreate(savedInstanceState: Bundle?)
     {
         super.onCreate(savedInstanceState)
-
-        binding=ActivityMainBinding.inflate(layoutInflater)
+        applyLocale() // Apply locale on creation
+        initializeSettings()
+        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.rvDailyForecast.layoutManager=LinearLayoutManager(this,LinearLayoutManager.VERTICAL,false)
-        binding.rvHourlyForecast.layoutManager=LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false)
-        binding.rvCurrDayForecast.layoutManager=LinearLayoutManager(this)
-        binding.rvStatistics.layoutManager=LinearLayoutManager(this)
+        binding.rvDailyForecast.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        binding.rvHourlyForecast.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.rvCurrDayForecast.layoutManager = LinearLayoutManager(this)
+        binding.rvStatistics.layoutManager = LinearLayoutManager(this)
 
-        dailyAdapter=DailyAdapter(this)
-        hourlyAdapter=HourlyAdapter(this)
-        currentDayAdapter=CurrentDayAdapter(this)
-        statisticsAdapter=StatisticsAdapter()
+        dailyAdapter = DailyAdapter(this)
+        hourlyAdapter = HourlyAdapter(this)
+        currentDayAdapter = CurrentDayAdapter(this)
+        statisticsAdapter = StatisticsAdapter()
 
-        binding.rvDailyForecast.adapter=dailyAdapter
-        binding.rvHourlyForecast.adapter=hourlyAdapter
-        binding.rvCurrDayForecast.adapter=currentDayAdapter
-        binding.rvStatistics.adapter=statisticsAdapter
+        binding.rvDailyForecast.adapter = dailyAdapter
+        binding.rvHourlyForecast.adapter = hourlyAdapter
+        binding.rvCurrDayForecast.adapter = currentDayAdapter
+        binding.rvStatistics.adapter = statisticsAdapter
 
         lineChart = binding.lineChartTemperature
 
-        homeViewModelFactory=HomeViewModelFactory(
-                ForecastRepositoryImpl.getInstance(
+        homeViewModelFactory = HomeViewModelFactory(
+            ForecastRepositoryImpl.getInstance(
                 ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
-                ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())),
-                Location(this),SettingsLocalDataSourceImpl(ForecastDatabase.getInstance(this).settingsDao()))
-
+                ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())), Location(this),
+            SettingsLocalDataSourceImpl(this)
+        )
         homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
-        homeViewModel.fetchForecastByLocation()
 
-        favoriteViewModelFactory= FavoriteViewModelFactory(ForecastRepositoryImpl.getInstance(
-            ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
-            ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())),SettingsLocalDataSourceImpl(ForecastDatabase.getInstance(this).settingsDao()))
-
-        // Initialize ViewModel
+        favoriteViewModelFactory = FavoriteViewModelFactory(
+            ForecastRepositoryImpl.getInstance(
+                ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
+                ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())
+            ),
+            SettingsLocalDataSourceImpl(this)
+        )
         favoriteViewModel = ViewModelProvider(this, favoriteViewModelFactory)[FavoriteViewModel::class.java]
 
-        // Request location
         requestLocationPermission()
-
-        // Observe data
         homeViewModel.forecast.observe(this) { response ->
             updateUI(response)
         }
-
         homeViewModel.error.observe(this) { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+        }
+        favoriteViewModel.toastMessage.observe(this) { message ->
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
+        favoriteViewModel.error.observe(this) { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()
         }
 
         binding.ivMenu.setOnClickListener {
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }
-
         binding.navigationView.setCheckedItem(R.id.nav_home)
-
         binding.btnAddToFavorites.setOnClickListener {
             homeViewModel.forecast.value?.let { response ->
                 val lat = response.city.coord.lat.toDouble()
@@ -153,44 +156,94 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
                 Toast.makeText(this, "No location data available", Toast.LENGTH_SHORT).show()
             }
         }
-        // Observe FavoriteViewModel feedback
-        favoriteViewModel.toastMessage.observe(this) { message ->
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        }
-
-        favoriteViewModel.error.observe(this) { error ->
-            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
-        }
-
         setupDrawer()
         observeSettingsChanges()
+        updateUILabels()
+        fetchInitialForecast()
+    }
+
+    private fun fetchInitialForecast()
+    {
+        val settings = SettingsManager.currentSettings.value ?: Settings()
+        if (settings.locationSource == "GPS") {
+            requestLocationPermission()
+        } else {
+            homeViewModel.fetchForecast(settings.latitude, settings.longitude)
+            binding.tvCity.text = settings.locationName
+            binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
+        }
+    }
+
+    private fun initializeSettings()
+    {
+        val settingsLocalDataSource = SettingsLocalDataSourceImpl(this)
+        ProcessLifecycleOwner.get().lifecycleScope.launch {
+            val settings = settingsLocalDataSource.getSettings() ?: Settings()
+            SettingsManager.updateSettings(settings)
+        }
+    }
+
+    private fun applyLocale()
+    {
+        val settings = SettingsManager.currentSettings.value ?: Settings()
+        val locale = if (settings.language == "Arabic") Locale("ar") else Locale("en")
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     private fun observeSettingsChanges()
     {
-        lifecycleScope.launchWhenStarted {
-            SettingsManager.settingsFlow.collect { settings ->
-                // Update locale
-                val language = settings.language
-                val locale = if (language == "Arabic") Locale("ar") else Locale("en")
-                Locale.setDefault(locale)
-                val config = resources.configuration
-                config.setLocale(locale)
-                resources.updateConfiguration(config, resources.displayMetrics)
+       // Apply initial settings
+       applySettings(SettingsManager.currentSettings.value ?: Settings())
 
-                // Refresh UI elements that depend on settings
-                updateUILabels()
+       // Observe future changes
+       lifecycleScope.launch {
+           SettingsManager.settingsFlow.collect { settings ->
+               applySettings(settings)
+           }
+       }
+   }
+
+    private fun applySettings(settings: Settings)
+    {
+        // Update locale
+        val currentLocale = resources.configuration.locale
+        val newLocale = if (settings.language == "Arabic") Locale("ar") else Locale("en")
+        if (currentLocale.language != newLocale.language) {
+            Locale.setDefault(newLocale)
+            val config = resources.configuration
+            config.setLocale(newLocale)
+            resources.updateConfiguration(config, resources.displayMetrics)
+            recreate() // Recreate for language changes
+        }
+        else
+        {
+            // Update UI elements
+            updateUILabels()
+            homeViewModel.forecast.value?.let { response ->
+                val hourlyForecasts = response.toEntityList().take(8)
+                updateTemperatureChart(hourlyForecasts)
+                updateStatistics(hourlyForecasts)
+                currentDayAdapter.notifyDataSetChanged()
+                hourlyAdapter.notifyDataSetChanged()
+                dailyAdapter.notifyDataSetChanged()
+                statisticsAdapter.notifyDataSetChanged()
             }
+            binding.navigationView.menu.clear()
+            binding.navigationView.inflateMenu(R.menu.nav_menu)
         }
     }
 
-    private fun updateUILabels() {
-        // Update any UI elements that might be affected by language or unit changes
+    private fun updateUILabels()
+    {
         binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
         homeViewModel.forecast.value?.let { response ->
-            updateUI(response)
+            binding.tvCity.text = "${response.city.name}, ${response.city.country}"
         }
     }
+
     private fun requestLocationPermission()
     {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
@@ -206,8 +259,7 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray)
     {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_LOCATION_PERMISSION && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-        {
+        if (requestCode == REQUEST_LOCATION_PERMISSION && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             homeViewModel.fetchForecastByLocation()
         }
         else
@@ -217,89 +269,67 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         }
     }
 
-
-    private fun updateUI(response: ForecastResponse)
-    {
-        // Handle Intent from FavoriteActivity
-            intent.extras?.let { extras ->
+    private fun updateUI(response: ForecastResponse) {
+        intent.extras?.let { extras ->
             val lat = extras.getDouble("latitude", defaultLat)
             val lng = extras.getDouble("longitude", defaultLng)
             homeViewModel.fetchForecast(lat, lng)
             binding.tvCity.text = "Selected Location"
             binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
         }
-        // Current Weather
         binding.tvCity.text = "${response.city.name}, ${response.city.country}"
         binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date())
 
-       // val forecastEntities = response.toEntityList()
-
-        //Card
         currentDayAdapter.submitList(response.toEntityList())
-
-        // Hourly Forecast
         hourlyAdapter.submitList(response.toEntityList())
-
-        // 5-Day Forecast
         dailyAdapter.submitList(response.toEntityList())
-
 
         val hourlyForecasts = response.toEntityList().take(8)
         updateTemperatureChart(hourlyForecasts)
         updateStatistics(hourlyForecasts)
-
-
     }
 
-    private fun setupDrawer()
-    {
-        // Setup navigation item clicks
+    private fun setupDrawer() {
         binding.navigationView.setNavigationItemSelectedListener { menuItem ->
-            when (menuItem.itemId)
-            {
-                R.id.nav_home ->
-                    {
-                       binding.drawerLayout.closeDrawer(GravityCompat.START)
-                    }
-                R.id.nav_setting ->
-                    {
-                        val intent = Intent(this, SettingsView::class.java)
-                        startActivity(intent)
-                    }
-                R.id.nav_map->
-                    {
-                       val intent = Intent(this, MapActivity::class.java)
-                       mapActivityResultLauncher.launch(intent)
-                    }
-                R.id.nav_favorites->
-                    {
-                        val intent = Intent(this, FavoriteView::class.java)
-                        startActivity(intent)
-                    }
-                R.id.nav_alarm->
-                    {
-                       val intent = Intent(this, AlertView::class.java)
-                       startActivity(intent)
-                    }
+            when (menuItem.itemId) {
+                R.id.nav_home -> {
+                    binding.drawerLayout.closeDrawer(GravityCompat.START)
+                }
+                R.id.nav_setting -> {
+                    startActivity(Intent(this, SettingsView::class.java))
+                }
+                R.id.nav_map -> {
+                    val intent = Intent(this, MapActivity::class.java)
+                    mapActivityResultLauncher.launch(intent)
+                }
+                R.id.nav_favorites -> {
+                    startActivity(Intent(this, FavoriteView::class.java))
+                }
+                R.id.nav_alarm -> {
+                    startActivity(Intent(this, AlertView::class.java))
+                }
             }
-            // Close drawer after click
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
     }
 
-    override fun onStart()
-    {
+    override fun onStart() {
         super.onStart()
         binding.navigationView.setCheckedItem(R.id.nav_home)
     }
 
-   /* private fun updateTemperatureChart(forecasts: List<ForecastEntity>)
-    {
+    private fun updateTemperatureChart(forecasts: List<ForecastEntity>) {
+        val settings = SettingsManager.currentSettings.value ?: Settings()
+        val unitLabel = when (settings.temperatureUnit) {
+            "Kelvin" -> "K"
+            "Fahrenheit" -> "°F"
+            else -> "°C"
+        }
         val entries = forecasts.mapIndexed { index, forecast ->
             Entry(index.toFloat(), forecast.temp)
         }
-        val dataSet = LineDataSet(entries, "Temperature (°C)").apply {
+        val dataSet = LineDataSet(entries, "Temperature ($unitLabel)").apply {
             color = ContextCompat.getColor(this@HomeView, R.color.white)
             valueTextColor = ContextCompat.getColor(this@HomeView, R.color.white)
             lineWidth = 2f
@@ -328,51 +358,9 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
             legend.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
             invalidate()
         }
-    }*/
+    }
 
-    private fun updateTemperatureChart(forecasts: List<ForecastEntity>) {
-       val settings = SettingsManager.currentSettings.value ?: Settings()
-       val unitLabel = when (settings.temperatureUnit) {
-           "Kelvin" -> "K"
-           "Fahrenheit" -> "°F"
-           else -> "°C"
-       }
-       val entries = forecasts.mapIndexed { index, forecast ->
-           Entry(index.toFloat(), forecast.temp)
-       }
-       val dataSet = LineDataSet(entries, "Temperature ($unitLabel)").apply {
-           color = ContextCompat.getColor(this@HomeView, R.color.white)
-           valueTextColor = ContextCompat.getColor(this@HomeView, R.color.white)
-           lineWidth = 2f
-           setDrawCircles(true)
-           setCircleColor(ContextCompat.getColor(this@HomeView, R.color.white))
-           setDrawValues(false)
-       }
-       val lineData = LineData(dataSet)
-       lineChart.apply {
-           data = lineData
-           description.isEnabled = false
-           setTouchEnabled(true)
-           isDragEnabled = true
-           setScaleEnabled(true)
-           setPinchZoom(true)
-           setBackgroundColor(Color.TRANSPARENT)
-           xAxis.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
-           xAxis.position = XAxis.XAxisPosition.BOTTOM
-           xAxis.valueFormatter = object : ValueFormatter() {
-               override fun getFormattedValue(value: Float): String {
-                   return forecasts.getOrNull(value.toInt())?.dt?.toHourlyFormat() ?: ""
-               }
-           }
-           axisLeft.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
-           axisRight.isEnabled = false
-           legend.textColor = ContextCompat.getColor(this@HomeView, R.color.white)
-           invalidate()
-       }
-   }
-
-
-    /*private fun updateStatistics(forecasts: List<ForecastEntity>)
+    private fun updateStatistics(forecasts: List<ForecastEntity>)
     {
         val stats = mutableListOf<StatisticItem>()
         val avgTemp = forecasts.map { it.temp }.average().toFloat()
@@ -380,44 +368,19 @@ class HomeView : AppCompatActivity() , OnDailyClickListener,OnHourlyForecastClic
         val minTemp = forecasts.minOfOrNull { it.temp } ?: 0f
         val avgHumidity = forecasts.map { it.humidity }.average().toFloat()
 
-        stats.add(StatisticItem("Average Temperature", "${avgTemp.toInt()}°C"))
-        stats.add(StatisticItem("Max Temperature", "${maxTemp.toInt()}°C"))
-        stats.add(StatisticItem("Min Temperature", "${minTemp.toInt()}°C"))
-        stats.add(StatisticItem("Average Humidity", "${avgHumidity.toInt()}%"))
-
-        statisticsAdapter.submitList(stats)
-    }*/
-
-    private fun updateStatistics(forecasts: List<ForecastEntity>) {
-        val settings = SettingsManager.currentSettings.value ?: Settings()
-        val tempUnit = when (settings.temperatureUnit) {
-            "Kelvin" -> "K"
-            "Fahrenheit" -> "°F"
-            else -> "°C"
-        }
-        val stats = mutableListOf<StatisticItem>()
-        val avgTemp = forecasts.map { it.temp }.average().toFloat()
-        val maxTemp = forecasts.maxOfOrNull { it.temp } ?: 0f
-        val minTemp = forecasts.minOfOrNull { it.temp } ?: 0f
-        val avgHumidity = forecasts.map { it.humidity }.average().toFloat()
-
-        stats.add(StatisticItem("Average Temperature", "${avgTemp.toInt()}$tempUnit"))
-        stats.add(StatisticItem("Max Temperature", "${maxTemp.toInt()}$tempUnit"))
-        stats.add(StatisticItem("Min Temperature", "${minTemp.toInt()}$tempUnit"))
+        stats.add(StatisticItem("Average Temperature", avgTemp.toInt().toString()))
+        stats.add(StatisticItem("Max Temperature", maxTemp.toInt().toString()))
+        stats.add(StatisticItem("Min Temperature", minTemp.toInt().toString()))
         stats.add(StatisticItem("Average Humidity", "${avgHumidity.toInt()}%"))
 
         statisticsAdapter.submitList(stats)
     }
 
-    override fun onBackPressed()
-    {
+    override fun onBackPressed() {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         } else {
             super.onBackPressed()
         }
     }
-
-
-
 }

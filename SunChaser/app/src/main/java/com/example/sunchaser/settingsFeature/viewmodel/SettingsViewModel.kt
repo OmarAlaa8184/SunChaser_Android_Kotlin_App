@@ -25,9 +25,7 @@ class SettingsViewModelFactory(private val settingsLocalDataSource: SettingsLoca
     }
 }
 
-
-class SettingsViewModel (private val settingsLocalDataSource: SettingsLocalDataSource): ViewModel()
-{
+class SettingsViewModel(private val settingsLocalDataSource: SettingsLocalDataSource) : ViewModel() {
     private val _settings = MutableLiveData<Settings>()
     val settings: LiveData<Settings> get() = _settings
 
@@ -40,21 +38,14 @@ class SettingsViewModel (private val settingsLocalDataSource: SettingsLocalDataS
     }
 
     fun saveSettings(settings: Settings) {
-
         viewModelScope.launch {
             settingsLocalDataSource.saveSettings(settings)
-            _settings.value = settings
+            _settings.postValue(settings)
             SettingsManager.updateSettings(settings)
         }
     }
 
     fun updateSettings(settings: Settings) {
-
-        viewModelScope.launch {
-            settingsLocalDataSource.updateSettings(settings)
-            _settings.value = settings
-            SettingsManager.updateSettings(settings)
-        }
+        saveSettings(settings)
     }
-
 }

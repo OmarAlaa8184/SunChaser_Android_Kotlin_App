@@ -3,5 +3,10 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="weather_bg_gradient">#1E3A8A</color>
+    <color name="lightBackground">#FAFAFA</color>
+    <color name="primaryText">#212121</color>
+    <color name="secondaryText">#757575</color>
+    <color name="cardBackground">#FFFFFF</color>
+    <color name="purple">#650E8C</color>
 
 </resources>

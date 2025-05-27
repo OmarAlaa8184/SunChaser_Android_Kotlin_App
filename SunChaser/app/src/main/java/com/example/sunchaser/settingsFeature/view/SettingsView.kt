@@ -3,21 +3,27 @@ import androidx.appcompat.app.AppCompatActivity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.sunchaser.R
 import com.example.sunchaser.databinding.ActivitySettingsBinding
 import com.example.sunchaser.mapFeature.view.activitiesview.MapActivity
-import com.example.sunchaser.model.db.ForecastDatabase
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.sunchaser.model.db.SettingsLocalDataSourceImpl
 import com.example.sunchaser.model.network.Location
 import com.example.sunchaser.model.weatherPojo.Settings
+import com.example.sunchaser.model.weatherPojo.SettingsManager
 import com.example.sunchaser.settingsFeature.viewmodel.SettingsViewModel
 import com.example.sunchaser.settingsFeature.viewmodel.SettingsViewModelFactory
+import kotlinx.coroutines.launch
 import java.util.Locale
+
 
 
 class SettingsView : AppCompatActivity() {
@@ -26,7 +32,6 @@ class SettingsView : AppCompatActivity() {
     private lateinit var location: Location
     private val defaultLat = 30.0333
     private val defaultLng = 31.2333
-
     private val REQUEST_LOCATION_PERMISSION = 1
 
     private val mapActivityResultLauncher =
@@ -52,12 +57,12 @@ class SettingsView : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyLocale() // Apply locale on creation
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         location = Location(this)
-        val db = ForecastDatabase.getInstance(this)
-        val repository = SettingsLocalDataSourceImpl(db.settingsDao())
+        val repository = SettingsLocalDataSourceImpl(this)
         viewModel = ViewModelProvider(
             this,
             SettingsViewModelFactory(repository)
@@ -65,6 +70,33 @@ class SettingsView : AppCompatActivity() {
 
         setupUI()
         observeViewModel()
+        observeSettingsChanges()
+    }
+
+    override fun onTopResumedActivityChanged(isTopResumedActivity: Boolean)
+    {
+        super.onTopResumedActivityChanged(isTopResumedActivity)
+    }
+
+    private fun applyLocale() {
+        val settings = SettingsManager.currentSettings.value ?: Settings()
+        val locale = if (settings.language == "Arabic") Locale("ar") else Locale("en")
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+    }
+
+    private fun observeSettingsChanges() {
+        lifecycleScope.launch {
+            SettingsManager.settingsFlow.collect { settings ->
+                val currentLocale = resources.configuration.locale
+                val newLocale = if (settings.language == "Arabic") Locale("ar") else Locale("en")
+                if (currentLocale.language != newLocale.language) {
+                    recreate() // Recreate only for language changes
+                }
+            }
+        }
     }
 
     private fun setupUI() {
@@ -73,9 +105,7 @@ class SettingsView : AppCompatActivity() {
                 R.id.radioGps -> {
                     if (checkLocationPermission()) {
                         updateLocationFromGPS()
-                    }
-                    else
-                    {
+                    } else {
                         requestLocationPermission()
                     }
                 }
@@ -86,26 +116,25 @@ class SettingsView : AppCompatActivity() {
             }
         }
 
-        binding.spinnerTempUnit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: android.view.View?, position: Int, id: Long) {
+        binding.spinnerTempUnit.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 updateSettings()
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        binding.spinnerWindUnit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: android.view.View?, position: Int, id: Long) {
+        binding.spinnerWindUnit.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 updateSettings()
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        binding.spinnerLanguage.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: android.view.View?, position: Int, id: Long) {
+        binding.spinnerLanguage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 updateSettings()
-                //updateLocale()
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
     }
 
@@ -127,10 +156,10 @@ class SettingsView : AppCompatActivity() {
     private fun checkLocationPermission(): Boolean
     {
         return ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
     }
 
-    private fun requestLocationPermission() {
+    private fun requestLocationPermission()
+    {
         ActivityCompat.requestPermissions(
             this,
             arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
@@ -166,9 +195,12 @@ class SettingsView : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_LOCATION_PERMISSION && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == REQUEST_LOCATION_PERMISSION && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        {
             updateLocationFromGPS()
-        } else {
+        }
+        else
+        {
             Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
         }
     }

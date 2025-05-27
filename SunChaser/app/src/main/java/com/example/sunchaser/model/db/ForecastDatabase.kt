@@ -9,14 +9,14 @@ import com.example.sunchaser.model.weatherPojo.ForecastEntity
 import com.example.sunchaser.model.weatherPojo.Settings
 
 
-@Database(entities = [ForecastEntity::class , Alert::class ,Settings::class], version = 1,exportSchema = false)
+@Database(entities = [ForecastEntity::class , Alert::class], version = 1,exportSchema = false)
 abstract class ForecastDatabase:RoomDatabase()
 {
     abstract fun forecastDao():ForecastDao
 
     abstract fun alertDao():AlertDao
 
-    abstract fun settingsDao(): SettingsDao
+    //abstract fun settingsDao(): SettingsDao
 
     companion object DatabaseProvider {
         @Volatile

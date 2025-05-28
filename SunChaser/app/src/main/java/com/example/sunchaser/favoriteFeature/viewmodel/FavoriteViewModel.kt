@@ -53,7 +53,7 @@ class FavoriteViewModel(private val repository: ForecastRepository,private val s
     init {
         viewModelScope.launch {
             _settings.value = settingsLocalDataSource.getSettings() ?: Settings()
-            //loadFavorites()
+            loadFavorites()
         }
     }
     fun loadFavorites()
@@ -223,6 +223,7 @@ class FavoriteViewModel(private val repository: ForecastRepository,private val s
                    withContext(Dispatchers.IO) {
                        repository.insertForecasts(listOf(favorite))
                    }
+                   loadFavorites()
                    _toastMessage.postValue("Location added to favorites")
                    _isOffline.postValue(false)
                } else {

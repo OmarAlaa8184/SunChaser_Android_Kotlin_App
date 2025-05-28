@@ -3,7 +3,7 @@ package com.example.sunchaser.model.weatherPojo
 import com.example.sunchaser.model.db.ForecastLocalDataSource
 import com.example.sunchaser.model.network.ForecastRemoteDataSource
 
-class ForecastRepositoryImpl private constructor(private var forecastRemoteDataSource: ForecastRemoteDataSource, private var forecastLocalDataSource: ForecastLocalDataSource):ForecastRepository
+class ForecastRepositoryImpl  constructor(private var forecastRemoteDataSource: ForecastRemoteDataSource, private var forecastLocalDataSource: ForecastLocalDataSource):ForecastRepository
 {
     companion object
     {

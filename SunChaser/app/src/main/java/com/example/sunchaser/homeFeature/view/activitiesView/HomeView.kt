@@ -76,7 +76,6 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
     private val defaultLat = 30.0333
     private val defaultLng = 31.2333
     private val REQUEST_LOCATION_PERMISSION = 1
-   // private val LOCATION_PERMISSION_REQUEST_CODE = 100
 
     private val mapActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -149,7 +148,7 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
             if (isOffline) {
                 Toast.makeText(this, "Offline mode: Displaying cached data", Toast.LENGTH_SHORT).show()
             }
-        }
+        }//loadFavorites
         binding.ivMenu.setOnClickListener {
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }

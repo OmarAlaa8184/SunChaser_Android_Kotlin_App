@@ -20,120 +20,170 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Hamburger Icon -->
-            <ImageView
-                android:id="@+id/ivMenu"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:padding="2dp"
-                android:src="@drawable/ic_menu"
-                android:layout_marginBottom="24dp" />
-
-            <!-- Header -->
+            <!-- Container for all UI elements except retry button -->
             <LinearLayout
+                android:id="@+id/contentContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center"
-                android:layout_marginBottom="24dp">
+                android:visibility="gone">
 
-                <TextView
-                    android:id="@+id/tvCity"
+                <!-- Hamburger Icon -->
+                <ImageView
+                    android:id="@+id/ivMenu"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:padding="2dp"
+                    android:src="@drawable/ic_menu"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_marginBottom="24dp">
+
+                    <TextView
+                        android:id="@+id/tvCity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/white"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:fontFamily="@font/poppinsbold" />
+
+                    <TextView
+                        android:id="@+id/tvDateTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/poppinsmedium"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- Current Weather RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCurrDayForecast"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    tools:listitem="@layout/item_current_day" />
+
+                <!-- Add to Favorites Button -->
+                <Button
+                    android:id="@+id/btnAddToFavorites"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:textSize="26sp"
-                    android:textStyle="bold"
-                    android:fontFamily="@font/poppinsbold" />
+                    android:text="@string/add_to_favorites"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="16dp"/>
 
+                <!-- Hourly Forecast Title -->
                 <TextView
-                    android:id="@+id/tvDateTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="@string/hourly_forecast"
                     android:textColor="#B3FFFFFF"
-                    android:textSize="16sp"
-                    android:fontFamily="@font/poppinsmedium"
-                    android:layout_marginTop="4dp" />
+                    android:textSize="12sp"
+                    android:fontFamily="@font/poppinsbold"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Hourly Forecast RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvHourlyForecast"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    tools:listitem="@layout/item_hourly_forecast" />
+
+                <!-- Statistics Title -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/weather_statistics"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/poppinsbold"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Temperature Line Chart -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/lineChartTemperature"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Statistics RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvStatistics"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    tools:listitem="@layout/item_statistic" />
+
+                <!-- Daily Forecast Title -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/_5_day_forecast"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/poppinsbold"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Daily Forecast RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvDailyForecast"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    tools:listitem="@layout/item_daily_forecast" />
             </LinearLayout>
 
-            <!-- Current Weather RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvCurrDayForecast"
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardRetryPermission"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                tools:listitem="@layout/item_current_day" />
-
-            <Button
-                android:id="@+id/btnAddToFavorites"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/add_to_favorites"
                 android:layout_gravity="center"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginTop="300dp"
+                android:backgroundTint="@color/ic_launcher_background"
+                android:padding="16dp"
+                android:visibility="visible"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="6dp">
 
-            <!-- Hourly Forecast Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/hourly_forecast"
-                android:textColor="#B3FFFFFF"
-                android:textSize="12sp"
-                android:fontFamily="@font/poppinsbold"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginBottom="24dp"
+                    android:gravity="center"
+                    android:orientation="vertical">
 
-            <!-- Hourly Forecast RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvHourlyForecast"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                tools:listitem="@layout/item_hourly_forecast" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppinsbold"
+                        android:gravity="center"
+                        android:padding="10dp"
+                        android:text="@string/we_can_t_fetch_your_location"
+                        android:textColor="@color/white" />
 
-            <!-- Statistics Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/weather_statistics"
-                android:textColor="#B3FFFFFF"
-                android:textSize="12sp"
-                android:fontFamily="@font/poppinsbold"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
+                    <Button
+                        android:id="@+id/btnRetryPermission"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:backgroundTint="@color/purple"
+                        android:text="@string/enable_location"
+                        android:textColor="@color/white" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
-            <!-- Temperature Line Chart -->
-            <com.github.mikephil.charting.charts.LineChart
-                android:id="@+id/lineChartTemperature"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Statistics RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvStatistics"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                tools:listitem="@layout/item_statistic" />
-
-            <!-- Daily Forecast Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/_5_day_forecast"
-                android:textColor="#B3FFFFFF"
-                android:textSize="12sp"
-                android:fontFamily="@font/poppinsbold"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Daily Forecast RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvDailyForecast"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                tools:listitem="@layout/item_daily_forecast" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
@@ -146,5 +196,4 @@
         android:fitsSystemWindows="true"
         app:menu="@menu/nav_menu"
         app:headerLayout="@layout/nav_header" />
-
 </androidx.drawerlayout.widget.DrawerLayout>

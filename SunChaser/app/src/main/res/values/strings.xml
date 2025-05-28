@@ -20,7 +20,7 @@
     <string name="alarm">Alarm</string>
     <string name="select_date">Select Date</string>
     <string name="select_start_time">Select Start Time</string>
-    <string name="alarm_sound_notification">Alarm Sound / Notification</string>
+    <string name="alarm_sound_notification">Notification / Alarm Sound</string>
     <string name="add_alert">Add Alert</string>
     <string name="duration_minutes">Duration (minutes):</string>
     <string name="select_end_time">Select End Time</string>
@@ -36,4 +36,6 @@
     <string name="max_temperature">Max Temperature</string>
     <string name="min_temperature">Min Temperature</string>
     <string name="average_humidity">Average Humidity</string>
+    <string name="enable_location">Enable Location</string>
+    <string name="we_can_t_fetch_your_location">We Can\'t fetch your location</string>
 </resources>

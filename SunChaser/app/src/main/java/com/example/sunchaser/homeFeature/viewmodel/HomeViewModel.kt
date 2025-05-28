@@ -66,7 +66,8 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 val settings = settingsLocalDataSource.getSettings() ?: Settings()
-                val unit = when (settings.temperatureUnit) {
+                val unit = when (settings.temperatureUnit)
+                {
                     "Kelvin" -> "standard"
                     "Fahrenheit" -> "imperial"
                     else -> "metric"
@@ -74,11 +75,16 @@ class HomeViewModel(
                 val lang = if (settings.language == "Arabic") "ar" else "en"
                 val response = forecastRepository.getFiveDayForecast(lat, lon, unit, lang)
                 _forecast.postValue(response)
-            } catch (e: Exception) {
+            }
+            catch (e: Exception)
+            {
                 val cachedForecasts = forecastRepository.getAllStoredForecasts()
-                if (cachedForecasts.isNotEmpty()) {
+                if (cachedForecasts.isNotEmpty())
+                {
                     _forecast.postValue(cachedForecasts.toForecastResponse())
-                } else {
+                }
+                else
+                {
                     _error.postValue(e.message ?: "Unknown error")
                 }
             }

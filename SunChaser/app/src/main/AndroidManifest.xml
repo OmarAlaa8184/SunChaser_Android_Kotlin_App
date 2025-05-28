@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
 
     <application
         android:allowBackup="true"
@@ -30,7 +31,7 @@
             android:name=".alertFeature.viewmodel.AlertService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse"/>
+            android:foregroundServiceType="mediaPlayback"/>
 
         <activity
             android:name=".splashFeature.view.SplashActivity"

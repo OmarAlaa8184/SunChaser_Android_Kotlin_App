@@ -6,7 +6,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.icu.text.SimpleDateFormat
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -74,6 +76,7 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
     private val defaultLat = 30.0333
     private val defaultLng = 31.2333
     private val REQUEST_LOCATION_PERMISSION = 1
+   // private val LOCATION_PERMISSION_REQUEST_CODE = 100
 
     private val mapActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -146,7 +149,9 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
         binding.ivMenu.setOnClickListener {
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }
+
         binding.navigationView.setCheckedItem(R.id.nav_home)
+
         binding.btnAddToFavorites.setOnClickListener {
             homeViewModel.forecast.value?.let { response ->
                 val lat = response.city.coord.lat.toDouble()
@@ -155,6 +160,9 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
             } ?: run {
                 Toast.makeText(this, "No location data available", Toast.LENGTH_SHORT).show()
             }
+        }
+        binding.btnRetryPermission.setOnClickListener {
+            requestLocationPermission()
         }
         setupDrawer()
         observeSettingsChanges()
@@ -197,7 +205,6 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
     {
        // Apply initial settings
        applySettings(SettingsManager.currentSettings.value ?: Settings())
-
        // Observe future changes
        lifecycleScope.launch {
            SettingsManager.settingsFlow.collect { settings ->
@@ -258,18 +265,52 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray)
     {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_LOCATION_PERMISSION && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            homeViewModel.fetchForecastByLocation()
-        }
-        else
-        {
-            Toast.makeText(this, "Location permission denied. Using default location.", Toast.LENGTH_LONG).show()
-            homeViewModel.fetchForecast(30.0444, 31.2357) // Fallback: Cairo
-        }
-    }
+     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-    private fun updateUI(response: ForecastResponse) {
+     if (requestCode == REQUEST_LOCATION_PERMISSION) {
+         when {
+//             grantResults.isNotEmpty() && permissions.contains(Manifest.permission.ACCESS_FINE_LOCATION) &&
+//                     grantResults[permissions.indexOf(Manifest.permission.ACCESS_FINE_LOCATION)] == PackageManager.PERMISSION_GRANTED
+                  grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED-> {
+                 // Permission granted
+                 Toast.makeText(this, "Location permission granted. Fetching forecast...", Toast.LENGTH_SHORT).show()
+                 binding.contentContainer.visibility = View.VISIBLE
+                 binding.cardRetryPermission.visibility = View.GONE
+                 homeViewModel.fetchForecastByLocation()
+             }
+             grantResults.isNotEmpty() && permissions.contains(Manifest.permission.ACCESS_FINE_LOCATION) -> {
+                 // Permission denied
+                 if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION))
+                 {
+                     // Permission denied permanently
+                     Toast.makeText(this, "Location permission denied permanently. Please enable it in settings.", Toast.LENGTH_LONG).show()
+
+                     val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                         data = Uri.fromParts("package", packageName, null)
+                     }
+                     startActivity(intent)
+                 }
+                 else
+                 {
+                     // Permission denied temporarily
+                     Toast.makeText(this, "Location permission required to fetch forecast.", Toast.LENGTH_SHORT).show()
+                 }
+
+                 binding.contentContainer.visibility = View.GONE
+                 binding.cardRetryPermission.visibility = View.VISIBLE
+             }
+             else -> {
+                 // Unexpected case
+                 Toast.makeText(this, "Error processing permission request.", Toast.LENGTH_SHORT).show()
+                 binding.contentContainer.visibility = View.GONE
+                 binding.cardRetryPermission.visibility = View.VISIBLE
+             }
+         }
+     }
+ }
+
+    private fun updateUI(response: ForecastResponse)
+    {
         intent.extras?.let { extras ->
             val lat = extras.getDouble("latitude", defaultLat)
             val lng = extras.getDouble("longitude", defaultLng)
@@ -289,7 +330,8 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
         updateStatistics(hourlyForecasts)
     }
 
-    private fun setupDrawer() {
+    private fun setupDrawer()
+    {
         binding.navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_home -> {
@@ -314,12 +356,25 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
         }
     }
 
-    override fun onStart() {
+    override fun onStart()
+    {
         super.onStart()
         binding.navigationView.setCheckedItem(R.id.nav_home)
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            binding.contentContainer.visibility = View.VISIBLE
+            binding.cardRetryPermission.visibility = View.GONE
+            homeViewModel.fetchForecastByLocation()
+        }
+        else
+        {
+            binding.contentContainer.visibility = View.GONE
+            binding.cardRetryPermission.visibility = View.VISIBLE
+        }
     }
 
-    private fun updateTemperatureChart(forecasts: List<ForecastEntity>) {
+    private fun updateTemperatureChart(forecasts: List<ForecastEntity>)
+    {
         val settings = SettingsManager.currentSettings.value ?: Settings()
         val unitLabel = when (settings.temperatureUnit) {
             "Kelvin" -> "K"
@@ -376,7 +431,8 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
         statisticsAdapter.submitList(stats)
     }
 
-    override fun onBackPressed() {
+    override fun onBackPressed()
+    {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         } else {

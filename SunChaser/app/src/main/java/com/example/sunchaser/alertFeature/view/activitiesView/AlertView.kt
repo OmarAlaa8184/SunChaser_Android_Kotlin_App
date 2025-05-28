@@ -23,12 +23,18 @@ import com.example.sunchaser.alertFeature.viewmodel.AlertViewModelFactory
 import com.example.sunchaser.databinding.ActivityAlertBinding
 import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModel
 import com.example.sunchaser.favoriteFeature.viewmodel.FavoriteViewModelFactory
+import com.example.sunchaser.homeFeature.viewmodel.HomeViewModel
+import com.example.sunchaser.homeFeature.viewmodel.HomeViewModelFactory
 import com.example.sunchaser.model.db.AlertLocalDataSourceImpl
 import com.example.sunchaser.model.db.ForecastDatabase
 import com.example.sunchaser.model.db.ForecastLocalDataSourceImpl
+import com.example.sunchaser.model.db.SettingsLocalDataSourceImpl
 import com.example.sunchaser.model.network.ForecastRemoteDataSourceImpl
+import com.example.sunchaser.model.network.Location
 import com.example.sunchaser.model.weatherPojo.Alert
 import com.example.sunchaser.model.weatherPojo.ForecastRepositoryImpl
+import com.example.sunchaser.model.weatherPojo.Settings
+import com.example.sunchaser.model.weatherPojo.SettingsManager
 import java.util.Calendar
 
 
@@ -38,7 +44,10 @@ class AlertView : AppCompatActivity()
     private lateinit var binding: ActivityAlertBinding
     private lateinit var viewModel: AlertViewModel
     private lateinit var adapter: AlertsAdapter
+    private lateinit var homeViewModel: HomeViewModel // Add HomeViewModel
     private lateinit var alertViewModelFactory: AlertViewModelFactory
+    private var currentLocation: Triple<String, Double, Double>? = null // Cache location data
+    private var currentTemperature: Float = 0f // Cache temperature
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission())
     {
@@ -46,6 +55,7 @@ class AlertView : AppCompatActivity()
         if (!isGranted)
         {
             Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
+            homeViewModel.fetchForecastByLocation()
         }
     }
     override fun onCreate(savedInstanceState: Bundle?)
@@ -68,6 +78,25 @@ class AlertView : AppCompatActivity()
         // Disable selection of past dates
         binding.datePicker.minDate = System.currentTimeMillis()
 
+        val homeViewModelFactory = HomeViewModelFactory(
+            ForecastRepositoryImpl.getInstance(
+                ForecastRemoteDataSourceImpl(RetrofitClient.retrofitService),
+                ForecastLocalDataSourceImpl(ForecastDatabase.getInstance(this).forecastDao())
+            ), Location(this),
+            SettingsLocalDataSourceImpl(this)
+        )
+        homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
+
+       homeViewModel.forecast.observe(this) { response ->
+            response?.let {
+                currentLocation = Triple(
+                    "${it.city.name}, ${it.city.country}",
+                    it.city.coord.lat.toDouble(),
+                    it.city.coord.lon.toDouble()
+                )
+                currentTemperature = it.list.firstOrNull()?.main?.temp ?: 0f
+            }
+        }
         setupRecyclerView()
         setupClickListeners()
         observeViewModel()
@@ -88,6 +117,7 @@ class AlertView : AppCompatActivity()
     private fun setupRecyclerView()
     {
         adapter = AlertsAdapter(
+            viewModel,
             onToggle = { id, active -> viewModel.toggleAlert(id, active) },
             onDeleteClick = { alert ->
                 val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delete_alert_confirmation, null)
@@ -150,14 +180,16 @@ class AlertView : AppCompatActivity()
         } else {
             Alert.AlertType.NOTIFICATION
         }
-
+        val location = currentLocation ?: Triple("Current Location", 30.0333, 31.2333) // Fallback to default (Cairo)
+        val temperature=currentTemperature
         viewModel.addAlert(
-            locationName = "Selected Location", // Replace with actual location data
-            lat = 0.0,
-            lon = 0.0,
+            locationName = location.first,
+            lat = location.second,
+            lon = location.third,
             startTime = startTime,
             endTime = endTime,
-            alertType = alertType
+            alertType = alertType,
+            temperature = temperature
         )
     }
 

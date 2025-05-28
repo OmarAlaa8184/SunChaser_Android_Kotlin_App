@@ -21,7 +21,7 @@
     <string name="alarm">المنبه</string>
     <string name="select_date">اختر التاريخ</string>
     <string name="select_start_time">اختر وقت البدء</string>
-    <string name="alarm_sound_notification">صوت المنبه / الإشعار</string>
+    <string name="alarm_sound_notification">الإشعار / صوت المنبه</string>
     <string name="add_alert">إضافة تنبيه</string>
     <string name="duration_minutes">المدة (بالدقائق):</string>
     <string name="select_end_time">اختر وقت الانتهاء</string>
@@ -37,4 +37,6 @@
     <string name="max_temperature">أقصى درجة حرارة</string>
     <string name="min_temperature">أدنى درجة حرارة</string>
     <string name="average_humidity">متوسط الرطوبة</string>
+    <string name="enable_location">تفعيل الموقع</string>
+    <string name="we_can_t_fetch_your_location">لا يمكننا الحصول على موقعك</string>
 </resources>

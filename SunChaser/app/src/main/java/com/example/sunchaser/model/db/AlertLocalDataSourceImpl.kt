@@ -15,26 +15,26 @@ import java.util.concurrent.TimeUnit
 class AlertLocalDataSourceImpl(val alertDao: AlertDao,private val context: Context) :AlertLocalDataSource
 {
 
-    override suspend fun addAlert(alert: Alert)
+    override suspend fun addAlert(alert: Alert, temperature: Float, unitLabel: String)
     {
         withContext(Dispatchers.IO)
         {
             alertDao.insert(alert)
             if(alert.isActive)
             {
-                scheduleAlertWithWorkManager(alert)
+                scheduleAlertWithWorkManager(alert,temperature,unitLabel)
             }
         }
     }
 
-    override suspend fun updateAlert(alert: Alert)
+    override suspend fun updateAlert(alert: Alert, temperature: Float, unitLabel: String)
     {
         withContext(Dispatchers.IO)
         {
             alertDao.update(alert)
             if(alert.isActive)
             {
-                scheduleAlertWithWorkManager(alert)
+                scheduleAlertWithWorkManager(alert,temperature,unitLabel)
             }
             else
             {
@@ -84,14 +84,19 @@ class AlertLocalDataSourceImpl(val alertDao: AlertDao,private val context: Conte
 
     }
 
-    private fun scheduleAlertWithWorkManager(alert: Alert) {
+    private fun scheduleAlertWithWorkManager(alert: Alert,temperature: Float, unitLabel: String)
+    {
         val now = System.currentTimeMillis()
         if (alert.startTime <= now) return // Skip past alerts
+
 
         val data = workDataOf(
             "alert_id" to alert.id,
             "location" to alert.locationName,
-            "alert_type" to alert.alertType.name
+            "alert_type" to alert.alertType.name,
+            "temperature" to temperature,
+            "unitLabel" to unitLabel
+
         )
         val delay = alert.startTime - now
 

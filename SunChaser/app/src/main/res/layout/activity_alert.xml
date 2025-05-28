@@ -5,26 +5,29 @@
     android:background="@drawable/bg_gradient_sky"
     android:padding="8dp">
 
-    <ScrollView
+    <!-- Horizontal Scroll Section -->
+    <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp">
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:scrollbars="none">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Your cards go here side by side -->
 
             <!-- Date Picker Section -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="350dp"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
                 android:padding="16dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginEnd="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -45,12 +48,12 @@
 
             <!-- Start Time Section -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_width="350dp"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
                 android:padding="16dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginEnd="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -66,17 +69,17 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:layout_gravity="center"
-                    android:headerBackground="@drawable/bg_gradient_sky"/>
+                    android:headerBackground="@drawable/bg_gradient_sky" />
             </LinearLayout>
 
             <!-- Duration Section -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
                 android:padding="16dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginEnd="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -94,13 +97,13 @@
                     android:layout_gravity="center"/>
             </LinearLayout>
 
-            <!-- Alarm / Notification Switch -->
+            <!-- Alarm Switch -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:background="@drawable/bg_card"
-                android:padding="16dp"
-                android:layout_marginBottom="16dp">
+                android:padding="16dp">
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/switchType"
@@ -108,30 +111,31 @@
                     android:layout_height="wrap_content"
                     android:text="@string/alarm_sound_notification"
                     android:textColor="@color/white"
-                    android:paddingStart="75dp"
+                    android:fontFamily="@font/poppinsbold"
+                    android:paddingStart="16dp"
                     style="@style/Widget.Material3.CompoundButton.Switch" />
             </LinearLayout>
 
-            <!-- Add Alert Button -->
-            <Button
-                android:id="@+id/btnAddAlert"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/add_alert"
-
-                android:background="@drawable/rounded_button"
-                android:layout_marginTop="16dp"
-                android:paddingHorizontal="24dp"
-                android:paddingVertical="12dp"/>
         </LinearLayout>
-    </ScrollView>
+    </HorizontalScrollView>
+
+    <!-- Button between scroll and list -->
+    <Button
+        android:id="@+id/btnAddAlert"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/add_alert"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/rounded_button"
+        android:layout_marginVertical="12dp"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="12dp" />
 
     <!-- Alerts List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/alertsRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="250dp"
-
+        android:layout_height="match_parent"
         android:padding="8dp" />
 
 </LinearLayout>

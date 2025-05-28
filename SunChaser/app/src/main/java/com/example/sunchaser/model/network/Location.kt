@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 
-class Location(private val context: Context)
+class Location( val context: Context)
 {
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 

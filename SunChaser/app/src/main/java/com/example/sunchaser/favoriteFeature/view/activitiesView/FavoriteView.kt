@@ -137,6 +137,11 @@ class FavoriteView : AppCompatActivity() {
         favoriteViewModel.toastMessage.observe(this) { message ->
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
+        favoriteViewModel.isOffline.observe(this) { isOffline ->
+            if (isOffline) {
+                Toast.makeText(this, "Offline mode: Displaying cached data", Toast.LENGTH_SHORT).show()
+            }
+        }
         observeSettingsChanges()
         favoriteViewModel.loadFavorites()
     }

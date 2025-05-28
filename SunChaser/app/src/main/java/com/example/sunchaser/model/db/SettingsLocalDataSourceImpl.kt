@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
 
 }*/
 
-class SettingsLocalDataSourceImpl(private val context: Context) : SettingsLocalDataSource {
+class SettingsLocalDataSourceImpl(override val context: Context) : SettingsLocalDataSource {
     private val preferences = context.getSharedPreferences("WeatherAppPrefs", Context.MODE_PRIVATE)
 
     companion object {

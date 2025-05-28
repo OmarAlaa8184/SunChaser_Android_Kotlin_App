@@ -145,7 +145,11 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
         favoriteViewModel.error.observe(this) { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()
         }
-
+        homeViewModel.isOffline.observe(this) { isOffline ->
+            if (isOffline) {
+                Toast.makeText(this, "Offline mode: Displaying cached data", Toast.LENGTH_SHORT).show()
+            }
+        }
         binding.ivMenu.setOnClickListener {
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }
@@ -423,10 +427,10 @@ class HomeView : AppCompatActivity(), OnDailyClickListener, OnHourlyForecastClic
         val minTemp = forecasts.minOfOrNull { it.temp } ?: 0f
         val avgHumidity = forecasts.map { it.humidity }.average().toFloat()
 
-        stats.add(StatisticItem("Average Temperature", avgTemp.toInt().toString()))
-        stats.add(StatisticItem("Max Temperature", maxTemp.toInt().toString()))
-        stats.add(StatisticItem("Min Temperature", minTemp.toInt().toString()))
-        stats.add(StatisticItem("Average Humidity", "${avgHumidity.toInt()}%"))
+        stats.add(StatisticItem(this.getString(R.string.average_temperature), avgTemp.toInt().toString()))
+        stats.add(StatisticItem(this.getString(R.string.max_temperature), maxTemp.toInt().toString()))
+        stats.add(StatisticItem(this.getString(R.string.min_temperature), minTemp.toInt().toString()))
+        stats.add(StatisticItem(this.getString(R.string.average_humidity), "${avgHumidity.toInt()}%"))
 
         statisticsAdapter.submitList(stats)
     }

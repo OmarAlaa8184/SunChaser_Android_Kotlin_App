@@ -39,7 +39,7 @@ class StatisticsAdapter : ListAdapter<StatisticItem, StatisticsAdapter.ViewHolde
                 val numericValue = item.value.replace(Regex("[K°C°F]"), "").toFloatOrNull() ?: 0f
                 "${numericValue.toInt()}$tempUnit"
             }
-            else -> item.value // Non-temperature values (e.g., humidity %)
+            else -> item.value
         }
 
         with(holder.binding) {

@@ -9,6 +9,7 @@ import com.example.sunchaser.model.db.SettingsLocalDataSource
 import com.example.sunchaser.model.network.Location
 import com.example.sunchaser.model.weatherPojo.ForecastRepository
 import com.example.sunchaser.model.weatherPojo.ForecastResponse
+import com.example.sunchaser.model.weatherPojo.NetworkUtils
 import com.example.sunchaser.model.weatherPojo.toForecastResponse
 import kotlinx.coroutines.launch
 import com.example.sunchaser.model.weatherPojo.Settings
@@ -42,7 +43,8 @@ class HomeViewModel(
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> = _error
 
-
+    private val _isOffline = MutableLiveData<Boolean>()
+    val isOffline: LiveData<Boolean> = _isOffline
 
     init {
 
@@ -50,9 +52,12 @@ class HomeViewModel(
             // Observe settings changes
             SettingsManager.settingsFlow.collect { settings ->
                 // Refetch forecast if units or location source changed
-                if (settings.locationSource == "GPS") {
+                if (settings.locationSource == "GPS")
+                {
                     fetchForecastByLocation()
-                } else {
+                }
+                else
+                {
                     fetchForecast(settings.latitude, settings.longitude)
                 }
             }
@@ -65,27 +70,38 @@ class HomeViewModel(
     fun fetchForecast(lat: Double, lon: Double) {
         viewModelScope.launch {
             try {
-                val settings = settingsLocalDataSource.getSettings() ?: Settings()
-                val unit = when (settings.temperatureUnit)
-                {
-                    "Kelvin" -> "standard"
-                    "Fahrenheit" -> "imperial"
-                    else -> "metric"
-                }
-                val lang = if (settings.language == "Arabic") "ar" else "en"
-                val response = forecastRepository.getFiveDayForecast(lat, lon, unit, lang)
-                _forecast.postValue(response)
-            }
-            catch (e: Exception)
-            {
-                val cachedForecasts = forecastRepository.getAllStoredForecasts()
-                if (cachedForecasts.isNotEmpty())
-                {
-                    _forecast.postValue(cachedForecasts.toForecastResponse())
+                if (NetworkUtils.isNetworkAvailable(location.context)) {
+                    // Online: Fetch from API
+                    val settings = settingsLocalDataSource.getSettings() ?: Settings()
+                    val unit = when (settings.temperatureUnit) {
+                        "Kelvin" -> "standard"
+                        "Fahrenheit" -> "imperial"
+                        else -> "metric"
+                    }
+                    val lang = if (settings.language == "Arabic") "ar" else "en"
+                    val response = forecastRepository.getFiveDayForecast(lat, lon, unit, lang)
+                    _forecast.postValue(response)
+                    _isOffline.postValue(false)
                 }
                 else
                 {
-                    _error.postValue(e.message ?: "Unknown error")
+                    // Offline: Fetch cached data
+                    val cachedForecasts = forecastRepository.getAllStoredForecasts()
+
+                    if (cachedForecasts.isNotEmpty()) {
+                        _forecast.postValue(cachedForecasts.toForecastResponse())
+                        _isOffline.postValue(true)
+                    } else {
+                        _error.postValue("No internet connection and no cached data available")
+                    }
+                }
+            } catch (e: Exception) {
+                val cachedForecasts = forecastRepository.getAllStoredForecasts()
+                if (cachedForecasts.isNotEmpty()) {
+                    _forecast.postValue(cachedForecasts.toForecastResponse())
+                    _isOffline.postValue(true)
+                } else {
+                    _error.postValue("No internet connection and no cached data: ${e.message}")
                 }
             }
         }

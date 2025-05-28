@@ -14,4 +14,5 @@ interface ForecastLocalDataSource
 
     suspend fun getLocationByCoordinates(lat: Float, lon: Float): ForecastEntity?
 
+   // suspend fun getLatestForecastByCoordinates(lat: Float, lon: Float): ForecastEntity?
 }
